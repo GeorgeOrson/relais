@@ -1,4 +1,10 @@
-web/
-.relais/
+# Données locales de Relais : elles contiennent des chemins de ta machine
 projets.json
+.relais/
 FLUX.md
+
+# Interface : dépendances et build (recréés par Relais.bat)
+node_modules/
+web/dist/
+
+*.log
