@@ -8,7 +8,7 @@ if not exist "web\dist\index.html" (
   call npm run build || goto erreur
   popd
 )
-node server.js
+node server.js || pause
 goto :eof
 
 :erreur

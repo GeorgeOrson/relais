@@ -24,6 +24,11 @@ const writeJson = (file, data) => fs.writeFileSync(file, JSON.stringify(data, nu
 const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
 const texte = (v, max = 2000) => String(v ?? '').trim().slice(0, max);
+// Texte repris d'un fichier (etat.json, flux) avant d'entrer dans une consigne : caractères imprimables seulement.
+const propre = (v, max) => texte(String(v ?? '').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]+/g, ' '), max);
+// Clé de comparaison des chemins Windows : casse et séparateur final ignorés.
+const cle = (d) => path.resolve(String(d)).toLowerCase();
+const RESERVE = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\.|$)/i;
 
 // ---------- Skills (cache court : la page interroge le serveur toutes les quelques secondes) ----------
 let cache = { t: 0, skills: [] };
@@ -40,8 +45,10 @@ const manque = (etape) => {
 function listeFlux() {
   let files = [];
   try { files = fs.readdirSync(FLUX_DIR).filter((f) => f.endsWith('.json')); } catch { /* pas encore de dossier */ }
-  return files.map((f) => readJson(path.join(FLUX_DIR, f), null)).filter((f) => f && Array.isArray(f.etapes))
-    .map((f) => (ids(f.etapes), f))
+  return files.flatMap((f) => {
+    const flux = readJson(path.join(FLUX_DIR, f), null);
+    try { return [{ ...flux, nom: texte(flux.nom, 80) || refus('nom'), etapes: nettoieEtapes(flux.etapes) }]; } catch { return []; } // flux abîmé : ignoré
+  })
     .sort((a, b) => (a.ordre ?? 99) - (b.ordre ?? 99) || a.nom.localeCompare(b.nom));
 }
 
@@ -73,8 +80,13 @@ function verifieRetours(etapes) {
 
 function nettoieEtapes(etapes) {
   if (!Array.isArray(etapes) || !etapes.some((e) => e && !e.retour)) refus('Un flux a besoin d’au moins une étape.');
-  const propres = etapes.map((e, i) => {
-    if (e.retour) return { retour: texte(e.retour, 60), note: texte(e.note) };
+  const propres = etapes.map((x, i) => {
+    const e = Object(x);
+    if ('retour' in e) {
+      const retour = texte(e.retour, 60);
+      if (!retour) refus(`Le retour n° ${i + 1} ne renvoie à aucune étape.`);
+      return { retour, note: texte(e.note) };
+    }
     const titre = texte(e.titre, 80);
     if (!titre) refus(`L’étape ${i + 1} n’a pas de titre.`);
     return {
@@ -112,8 +124,9 @@ function deroule(etapes) {
 function enregistreFlux(f) {
   const nom = texte(f.nom, 80);
   if (!nom) refus('Le flux n’a pas de nom.');
-  const id = f.id ? String(f.id) : slug(nom);
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) refus('Nom de flux invalide.');
+  let id = f.id ? String(f.id) : slug(nom) || 'flux';
+  if (!f.id && id === 'nouveau') id = 'nouveau-flux'; // « nouveau » est réservé à la création dans l'interface
+  if (!ID.test(id) || id === 'nouveau') refus('Nom de flux invalide.');
   const file = path.join(FLUX_DIR, id + '.json');
   if (!f.id && fs.existsSync(file)) refus('Un flux porte déjà ce nom.');
   const flux = { id, nom, description: texte(f.description, 300), ordre: readJson(file, {}).ordre, etapes: nettoieEtapes(f.etapes) };
@@ -129,13 +142,20 @@ function supprimeFlux(id) {
 
 // ---------- Projets ----------
 // L'état vit dans le dossier du projet : .relais/etat.json (copie figée du flux + statuts), FLUX.md (lisible), livrables/.
-const registre = () => readJson(PROJETS, []);
+const registre = () => {
+  const r = readJson(PROJETS, []);
+  return Array.isArray(r) ? r.filter((d) => typeof d === 'string') : [];
+};
+const inscrit = (dossier) => registre().find((p) => cle(p) === cle(dossier));
 const etatFile = (dossier) => path.join(dossier, '.relais', 'etat.json');
 
-function connu(dossier) {
-  const d = registre().find((p) => p === dossier);
-  if (!d) refus('Projet inconnu.');
-  return d;
+const connu = (dossier) => inscrit(dossier) || refus('Projet inconnu.');
+
+// Chemin du livrable d'une étape, ou null s'il sort de <dossier>/livrables/ ou ne finit pas par .md (etat.json venu d'ailleurs).
+function livrable(dossier, e) {
+  const base = path.join(dossier, 'livrables');
+  const f = path.resolve(dossier, String(e.fichier ?? ''));
+  return f.startsWith(base + path.sep) && /\.md$/.test(f) ? f : null;
 }
 
 function ecrisFluxMd(dossier, etat) {
@@ -148,40 +168,48 @@ function ecrisFluxMd(dossier, etat) {
 
 function sauve(dossier, etat) {
   const { dossier: _d, courante: _c, ...reste } = etat; // champs calculés par lisProjet, jamais écrits
-  const propre = { ...reste, etapes: etat.etapes.map(({ manque: _m, ...e }) => e) };
-  writeJson(etatFile(dossier), propre);
-  ecrisFluxMd(dossier, propre);
+  const net = { ...reste, etapes: etat.etapes.map(({ manque: _m, invalide: _i, ...e }) => e) };
+  writeJson(etatFile(dossier), net);
+  ecrisFluxMd(dossier, net);
 }
 
 // Lit l'état et le rapproche du disque : un livrable présent signifie que l'étape est terminée.
 function lisProjet(dossier) {
   const etat = readJson(etatFile(dossier), null);
   if (!etat) return { dossier, nom: path.basename(dossier), introuvable: true, etapes: [] };
+  if (!Array.isArray(etat.etapes) || !etat.flux || etat.etapes.some((e) => !e || typeof e.titre !== 'string' || !Array.isArray(e.skills)))
+    return { dossier, nom: path.basename(dossier), introuvable: true, abime: true, etapes: [] };
   let change = false;
   for (const e of etat.etapes) {
-    const present = fs.existsSync(path.join(dossier, e.fichier));
+    const f = livrable(dossier, e);
+    if (!f) continue; // étape invalide : ni lecture ni changement de statut
+    const present = fs.existsSync(f);
     let s = e.statut;
-    if (s !== 'valide' && s !== 'saute') {
-      if (present) s = etat.auto ? 'valide' : 'termine';
+    if (s === 'valide' && !present) s = 'a-faire'; // livrable disparu : l'étape est à refaire
+    else if (s !== 'valide' && s !== 'saute') {
+      if (present) s = etat.auto && s === 'en-cours' ? 'valide' : 'termine'; // le mode auto ne valide que ce que sa session a écrit
       else if (s === 'termine') s = 'a-faire';
     }
     if (s !== e.statut) { e.statut = s; change = true; }
   }
-  if (change) sauve(dossier, etat);
+  if (change) try { sauve(dossier, etat); } catch (err) { console.error(err); } // dossier en lecture seule : on affiche quand même
   const courante = etat.etapes.findIndex((e) => e.statut !== 'valide' && e.statut !== 'saute');
-  return { ...etat, dossier, courante, etapes: etat.etapes.map((e) => ({ ...e, manque: manque(e) })) };
+  return { ...etat, dossier, courante, etapes: etat.etapes.map((e) => ({ ...e, manque: manque(e), invalide: !livrable(dossier, e) })) };
 }
 
 function creeProjet({ nom, fluxId, parent, existant, auto }) {
   const flux = listeFlux().find((f) => f.id === fluxId) || refus('Flux inconnu.');
   let dossier;
+  for (const c of [existant, parent]) if (texte(c) && !path.isAbsolute(texte(c))) refus('Indique un chemin de dossier complet, par exemple C:\\Users\\…');
   if (texte(existant)) {
     dossier = path.resolve(texte(existant));
     if (!fs.existsSync(dossier) || !fs.statSync(dossier).isDirectory()) refus('Ce dossier n’existe pas.');
   } else {
-    const propre = texte(nom, 80).replace(/[\\/:*?"<>|]/g, '').replace(/[. ]+$/, '');
-    if (!propre) refus('Donne un nom au projet.');
-    dossier = path.join(path.resolve(texte(parent) || PARENT), propre);
+    const net = texte(nom, 80).replace(/[\\/:*?"<>|]/g, '').replace(/[. ]+$/, '');
+    if (!net) refus('Donne un nom au projet.');
+    if (/[&^%;!]/.test(net)) refus('Le nom du projet ne peut pas contenir & ^ % ; ou !.');
+    if (RESERVE.test(net)) refus(`« ${net} » est un nom réservé par Windows : choisis-en un autre.`);
+    dossier = path.join(path.resolve(texte(parent) || PARENT), net);
   }
   if (!fs.existsSync(etatFile(dossier))) { // sinon : projet Relais existant, on le rattache simplement
     if (fs.existsSync(path.join(dossier, 'FLUX.md'))) refus('Ce dossier contient déjà un FLUX.md qui ne vient pas de Relais.');
@@ -192,17 +220,24 @@ function creeProjet({ nom, fluxId, parent, existant, auto }) {
       flux: { id: flux.id, nom: flux.nom },
       auto: !!auto,
       etapes: deroule(flux.etapes).map((e, i) => ({
-        ...e, fichier: `livrables/${String(i + 1).padStart(2, '0')}-${slug(e.titre)}${e.retour ? '-retour' : ''}.md`, statut: 'a-faire',
+        ...e, fichier: `livrables/${String(i + 1).padStart(2, '0')}-${slug(e.titre) || 'etape'}${e.retour ? '-retour' : ''}.md`, statut: 'a-faire',
       })),
     });
   }
-  const liste = registre();
-  if (!liste.includes(dossier)) writeJson(PROJETS, [dossier, ...liste]);
-  return dossier;
+  const deja = inscrit(dossier);
+  if (!deja) writeJson(PROJETS, [dossier, ...registre()]);
+  return deja || dossier;
 }
 
 // ---------- Consignes ----------
-function consigne(p, i) {
+function consigne(brut, i) {
+  const p = {
+    ...brut, nom: propre(brut.nom, 80), flux: { nom: propre(brut.flux?.nom, 80) },
+    etapes: brut.etapes.map((e) => ({
+      ...e, titre: propre(e.titre, 80), objectif: propre(e.objectif), livrable: propre(e.livrable), fichier: propre(e.fichier, 200),
+      skills: e.skills.map((s) => propre(s, 120)).filter(Boolean),
+    })),
+  };
   const anciens = (e, n) => p.etapes.slice(0, n).filter((x) => x.ref === e.ref && x.statut === 'valide').map((x) => '`' + x.fichier + '`');
   const bloc = (e, n) => [
     `### Étape ${n + 1}/${p.etapes.length} : ${e.titre}${e.retour ? ' (retour)' : ''}`,
@@ -233,13 +268,23 @@ function consigne(p, i) {
   ].join('\n\n') + '\n';
 }
 
+// Le dossier passe par cwd, jamais dans la ligne de commande : cmd et wt y interpréteraient & ou ;.
 function ouvreTerminal(dossier) {
-  if (process.env.RELAIS_DRY) return;
-  const repli = () => spawn('cmd', ['/c', 'start', '', '/D', dossier, 'cmd', '/k', 'claude', PROMPT], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-  const wt = spawn('wt.exe', ['-d', dossier, 'claude', PROMPT], { detached: true, stdio: 'ignore' });
-  wt.on('error', repli); // Windows Terminal absent : simple fenêtre cmd
-  wt.unref();
+  if (process.env.RELAIS_DRY) return Promise.resolve();
+  return new Promise((ok, ko) => {
+    const lance = (cmd, args, suite, cache) => {
+      const c = spawn(cmd, args, { cwd: dossier, detached: true, stdio: 'ignore', windowsHide: cache });
+      c.on('spawn', ok).on('error', suite);
+      c.unref();
+    };
+    // Windows Terminal absent : simple console cmd, ouverte par start dans le dossier courant (cwd)
+    lance('wt.exe', ['-d', '.', 'claude', PROMPT], () => lance('cmd', ['/c', 'start', '', 'cmd', '/k', 'claude', PROMPT], ko, true), false);
+  });
 }
+const terminal = (dossier) => ouvreTerminal(dossier).catch((err) => {
+  console.error(err);
+  refus('Le terminal n’a pas pu s’ouvrir. La consigne est prête : copie-la et colle-la dans Claude Code.');
+});
 
 function ecrisConsigne(dossier, contenu) {
   fs.mkdirSync(path.join(dossier, '.relais'), { recursive: true });
@@ -247,21 +292,23 @@ function ecrisConsigne(dossier, contenu) {
 }
 
 // ---------- Actions sur une étape ----------
-function agis({ dossier, i, action }) {
-  connu(dossier);
+function agis({ dossier: demande, i, action }) {
+  const dossier = connu(demande);
   const p = lisProjet(dossier);
   if (p.introuvable) refus('Le dossier du projet est introuvable.');
   const e = p.etapes[i] || refus('Étape inconnue.');
+  if (e.invalide) refus('Le chemin du livrable de cette étape sort du dossier livrables/ : Relais ne la touche pas.');
   if (action === 'lancer' || action === 'copier') {
     if (i !== p.courante) refus('Les étapes se font dans l’ordre : termine ou saute d’abord la précédente.');
     const visees = p.auto ? p.etapes.filter((x, n) => n >= i && x.statut !== 'saute' && x.statut !== 'valide') : [e];
     const bloquee = visees.find((x) => x.manque);
     if (bloquee) refus(`L’étape « ${bloquee.titre} » n’a pas de skill installé. Trouve-lui un skill ou saute-la.`);
+    const invalide = visees.find((x) => x.invalide);
+    if (invalide) refus(`Le chemin du livrable de « ${invalide.titre} » sort du dossier livrables/ : Relais ne la lance pas.`);
     const contenu = consigne(p, i);
     ecrisConsigne(dossier, contenu);
-    e.statut = 'en-cours';
+    for (const x of visees) x.statut = 'en-cours'; // en mode auto, toute la session est en cours
     sauve(dossier, p);
-    if (action === 'lancer') ouvreTerminal(dossier);
     return { consigne: contenu };
   }
   if (action === 'valider') {
@@ -271,7 +318,7 @@ function agis({ dossier, i, action }) {
     if (i !== p.courante) refus('On ne peut sauter que l’étape en cours.');
     e.statut = 'saute';
   } else if (action === 'refaire') {
-    const file = path.join(dossier, e.fichier);
+    const file = livrable(dossier, e); // finit par .md : la boucle ci-dessous trouve toujours un nom libre
     if (fs.existsSync(file)) { // l'ancien livrable est gardé avec un suffixe
       let n = 1;
       const ancien = (k) => file.replace(/\.md$/, `.v${k}.md`);
@@ -284,8 +331,8 @@ function agis({ dossier, i, action }) {
   return {};
 }
 
-function regleAuto({ dossier, auto }) {
-  connu(dossier);
+function regleAuto({ dossier: demande, auto }) {
+  const dossier = connu(demande);
   const etat = readJson(etatFile(dossier), null) || refus('Le dossier du projet est introuvable.');
   etat.auto = !!auto;
   sauve(dossier, etat);
@@ -304,26 +351,28 @@ function choisitDossier({ depart }) {
     'if ($env:RELAIS_DEPART -and (Test-Path -LiteralPath $env:RELAIS_DEPART)) { $d.SelectedPath = $env:RELAIS_DEPART }',
     "if ($d.ShowDialog($f) -eq 'OK') { $d.SelectedPath }",
   ].join('; ');
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     // le dossier de départ passe par l'environnement, jamais dans le texte du script
     execFile('powershell.exe', ['-NoProfile', '-STA', '-Command', script],
       { env: { ...process.env, RELAIS_DEPART: texte(depart, 500) || PARENT }, windowsHide: true, timeout: 600000 },
       (err, out) => {
+        if (err) return console.error(err), reject(new Refus('Le sélecteur de dossier n’a pas pu s’ouvrir. Tape le chemin à la main.'));
         const dossier = String(out || '').trim();
-        resolve(!err && dossier ? { dossier } : { annule: true });
+        resolve(dossier ? { dossier } : { annule: true });
       });
   });
 }
 
+const TROUVER = path.join(os.tmpdir(), 'relais-trouver-skill');
 function trouveSkill({ titre, objectif }) {
-  ecrisConsigne(__dirname, [
+  ecrisConsigne(TROUVER, [
     '# Relais — trouver un skill',
     `Il me manque un skill Claude Code pour cette étape d'un flux : « ${texte(titre, 80)} ». Objectif : ${texte(objectif) || 'non précisé'}.`,
     "Invoque le skill `find-skills` avec l'outil Skill et cherche des candidats. Présente-moi en français les trois meilleurs : ce que fait chacun, son dépôt, sa popularité.",
     "N'installe rien sans mon accord explicite. Avant toute installation, montre-moi le contenu du SKILL.md.",
     'Réponds en français.',
   ].join('\n\n') + '\n');
-  ouvreTerminal(__dirname);
+  return terminal(TROUVER);
 }
 
 // ---------- HTTP ----------
@@ -348,28 +397,51 @@ function send(res, code, body, type = 'application/json; charset=utf-8') {
 function body(req) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (c) => { data += c; if (data.length > 1e6) reject(new Refus('Requête trop grosse.')); });
+    req.on('data', (c) => { data += c; if (data.length > 1e6) { reject(new Refus('Requête trop grosse.')); req.destroy(); } });
     req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { reject(new Refus('JSON invalide.')); } });
   });
+}
+
+// Dossier qui a déjà un état Relais : rattaché tel quel. S'il vient d'ailleurs, l'interface montre d'abord ses étapes (S2).
+function projet(b) {
+  const dossier = texte(b.existant) && path.isAbsolute(texte(b.existant)) && path.resolve(texte(b.existant));
+  const etat = dossier && readJson(etatFile(dossier), null);
+  if (!etat) return { dossier: creeProjet(b) };
+  const flux = propre(etat.flux?.nom, 80) || 'inconnu';
+  if (!inscrit(dossier) && !b.confirme)
+    return { confirmer: { flux, etapes: (Array.isArray(etat.etapes) ? etat.etapes : []).slice(0, 50).map((e) => propre(e?.titre, 80) || '(sans titre)') } };
+  return { dossier: creeProjet(b), info: `Ce dossier suit déjà le flux « ${flux} » : son état est gardé et le flux choisi est ignoré.` };
 }
 
 const routes = {
   '/api/flux': (b) => ({ flux: enregistreFlux(b) }),
   '/api/flux/supprimer': (b) => (supprimeFlux(b.id), {}),
-  '/api/projet': (b) => ({ dossier: creeProjet(b) }),
+  '/api/projet': projet,
   '/api/projet/retirer': (b) => (writeJson(PROJETS, registre().filter((d) => d !== b.dossier)), {}),
   '/api/projet/auto': (b) => (regleAuto(b), {}),
-  '/api/etape': (b) => agis(b),
-  '/api/trouver': (b) => (trouveSkill(b), {}),
+  '/api/etape': async (b) => {
+    const r = agis(b);
+    if (b.action === 'lancer') await terminal(connu(b.dossier));
+    return r;
+  },
+  '/api/trouver': async (b) => (await trouveSkill(b), {}),
   '/api/dossier': (b) => choisitDossier(b),
+};
+
+const ORIGINES = [`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`];
+const ENTETES = {
+  'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'",
+  'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'x-relais': '1',
 };
 
 async function handle(req, res) {
   try {
     // Refuse les pages web tierces qui viseraient ce serveur local (rebinding DNS, requêtes inter-sites).
+    for (const [k, v] of Object.entries(ENTETES)) res.setHeader(k, v);
     const host = (req.headers.host || '').toLowerCase();
     if (host !== `localhost:${PORT}` && host !== `127.0.0.1:${PORT}`) return send(res, 403, { error: 'Hôte refusé' });
     const url = new URL(req.url, 'http://x');
+    if (url.pathname.startsWith('/api/') && ['cross-site', 'same-site'].includes(req.headers['sec-fetch-site'])) return send(res, 403, { error: 'Requête refusée' });
     if (req.method === 'GET' && !url.pathname.startsWith('/api/')) {
       const file = fichierStatique(url.pathname);
       if (!file) {
@@ -378,33 +450,49 @@ async function handle(req, res) {
       }
       const immuable = file.includes(path.join(WEB, 'assets')); // noms de fichiers versionnés par Vite
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': immuable ? 'max-age=31536000, immutable' : 'no-store' });
-      return fs.createReadStream(file).pipe(res);
+      return fs.createReadStream(file).on('error', (err) => { console.error(err); res.destroy(); }).pipe(res);
     }
     if (req.method === 'GET' && url.pathname === '/api/data') {
-      return send(res, 200, { skills: skills(), flux: listeFlux(), projets: registre().map(lisProjet), parent: PARENT });
+      const projets = registre().map((d) => {
+        try { return lisProjet(d); } catch (err) { console.error(err); return { dossier: d, nom: path.basename(d), introuvable: true, abime: true, etapes: [] }; }
+      });
+      return send(res, 200, { skills: skills(), flux: listeFlux(), projets, parent: PARENT });
     }
     if (req.method === 'GET' && url.pathname === '/api/livrable') {
       const p = lisProjet(connu(url.searchParams.get('d')));
       const e = p.etapes[Number(url.searchParams.get('i'))] || refus('Étape inconnue.');
-      return send(res, 200, { texte: fs.readFileSync(path.join(p.dossier, e.fichier), 'utf8').replace(/^﻿/, '') });
+      const f = livrable(p.dossier, e) || refus('Le chemin de ce livrable sort du dossier livrables/ : Relais ne le lit pas.');
+      if (!fs.existsSync(f)) refus(`Le livrable ${e.fichier} n’existe plus.`);
+      return send(res, 200, { texte: fs.readFileSync(f, 'utf8').replace(/^﻿/, '') });
     }
     if (req.method === 'POST' && routes[url.pathname]) {
-      if (req.headers['x-relais'] !== '1') return send(res, 403, { error: 'Requête refusée' });
+      if (req.headers['x-relais'] !== '1' || !ORIGINES.includes(req.headers.origin)) return send(res, 403, { error: 'Requête refusée' });
       return send(res, 200, await routes[url.pathname](await body(req)));
     }
     send(res, 404, { error: 'Introuvable' });
   } catch (e) {
     if (!(e instanceof Refus)) console.error(e);
-    send(res, e instanceof Refus ? 400 : 500, { error: e instanceof Refus ? e.message : 'Erreur interne : ' + e.message });
+    send(res, e instanceof Refus ? 400 : 500, { error: e instanceof Refus ? e.message : 'Erreur interne' }); // détail dans la console seulement
   }
 }
 
-module.exports = { fichierStatique, WEB, creeProjet, lisProjet, agis, regleAuto, consigne, listeFlux, nettoieEtapes, deroule, slug, PROMPT };
+module.exports = { fichierStatique, WEB, creeProjet, lisProjet, agis, regleAuto, consigne, listeFlux, nettoieEtapes, enregistreFlux, deroule, slug, handle, projet, PROMPT };
 
 if (require.main === module) {
-  http.createServer(handle).listen(PORT, HOST, () => {
-    const page = `http://localhost:${PORT}/`;
+  const page = `http://localhost:${PORT}/`;
+  const ouvre = () => { if (!process.argv.includes('--no-open')) execFile('cmd', ['/c', 'start', '', page], { windowsHide: true }, () => {}); };
+  const pris = () => { console.error(`Le port ${PORT} est déjà pris par un autre programme. Ferme-le, puis relance Relais.`); process.exitCode = 1; };
+  http.createServer(handle).on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    // Port pris : si c'est déjà Relais, on ouvre simplement la page existante.
+    http.get({ host: HOST, port: PORT, path: '/', headers: { host: `localhost:${PORT}` } }, (r) => {
+      r.resume();
+      if (r.headers['x-relais'] !== '1') return pris();
+      console.log('Relais tourne déjà : ' + page);
+      ouvre();
+    }).on('error', pris);
+  }).listen(PORT, HOST, () => {
     console.log('Relais : ' + page);
-    if (!process.argv.includes('--no-open')) execFile('cmd', ['/c', 'start', '', page], { windowsHide: true }, () => {});
+    ouvre();
   });
 }
