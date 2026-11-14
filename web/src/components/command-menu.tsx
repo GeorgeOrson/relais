@@ -35,7 +35,7 @@ export function CommandMenu({ open, setOpen }: { open: boolean; setOpen: (o: boo
   }
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen} title="Rechercher" description="Aller à un projet, un flux ou une action">
+    <CommandDialog open={open} onOpenChange={setOpen} title="Rechercher" description="Ouvrir un projet ou un flux, ou lancer une action">
       <CommandInput placeholder="Projet, flux, action…" />
       <CommandList>
         <CommandEmpty>Aucun résultat.</CommandEmpty>

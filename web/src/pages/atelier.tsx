@@ -151,7 +151,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
   React.useEffect(() => {
     setGarde(() =>
       aSauverRef.current
-        ? confirmer({ titre: "Quitter sans enregistrer ?", texte: "Les changements apportés à ce flux seront perdus.", action: "Quitter", danger: true })
+        ? confirmer({ titre: "Quitter sans enregistrer ?", texte: "Tes changements sur ce flux seront perdus.", action: "Quitter", danger: true })
         : Promise.resolve(true)
     )
     const avant = (e: BeforeUnloadEvent) => {
@@ -232,19 +232,19 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
       aSauverRef.current = false
       if (!b.id) va(lien.flux(r.flux.id))
     } catch (e) {
-      toast.error("Enregistrement refusé", { description: (e as Error).message })
+      toast.error("Impossible d'enregistrer le flux", { description: (e as Error).message })
     } finally {
       setEnregistre(false)
     }
   }
 
   const supprimeFlux = async () => {
-    if (!(await confirmer({ titre: `Supprimer « ${b.nom} » ?`, texte: "Le modèle de flux est supprimé. Les projets déjà lancés gardent leur propre copie des étapes.", action: "Supprimer", danger: true })))
+    if (!(await confirmer({ titre: `Supprimer « ${b.nom} » ?`, texte: "Les projets déjà lancés avec ce flux gardent leur copie des étapes.", action: "Supprimer", danger: true })))
       return
     try {
       await api("/api/flux/supprimer", { id: b.id })
     } catch (e) {
-      return toast.error("Suppression refusée", { description: (e as Error).message })
+      return toast.error("Impossible de supprimer le flux", { description: (e as Error).message })
     }
     setGarde(null) // le flux n'existe plus : rien à protéger
     await va(lien.accueil())
@@ -365,7 +365,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="f-desc">Description</Label>
-                  <Textarea id="f-desc" rows={2} className="min-h-0" value={b.description} onChange={(e) => setB({ ...b, description: e.target.value })} placeholder="En une phrase : de quoi à quoi." />
+                  <Textarea id="f-desc" rows={2} className="min-h-0" value={b.description} onChange={(e) => setB({ ...b, description: e.target.value })} placeholder="En une phrase : du point de départ au résultat." />
                 </div>
               </CardContent>
             </Card>
@@ -393,7 +393,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
               </Button>
               <Button variant="outline" className="border-dashed" onClick={ajouteRetour}>
                 <Undo2Icon />
-                Retour en arrière
+                Nouveau retour
               </Button>
             </div>
           </section>
@@ -405,7 +405,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
                   <CardHeader>
                     <CardTitle className="text-base">Réglages de l'étape</CardTitle>
                     <CardDescription>
-                      Sélectionne une étape pour régler son titre, ses skills, son objectif et son livrable. Un retour renvoie à une étape déjà faite avant de continuer : 1 → 2 → 3 → 2 → 4.
+                      Choisis une étape pour régler son titre, ses skills, son objectif et son livrable. Un retour fait repasser par une étape déjà faite avant de continuer : 1 → 2 → 3 → 2 → 4.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -430,7 +430,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
             <SheetContent side="left" className="w-[88vw] gap-0 p-0 sm:max-w-sm">
               <SheetHeader className="border-b">
                 <SheetTitle>Ajouter un skill</SheetTitle>
-                <SheetDescription>{choisi?.type === "etape" ? `Ajouté à « ${choisi.titre || "Sans titre"} ».` : "Chaque skill touché crée une nouvelle étape."}</SheetDescription>
+                <SheetDescription>{choisi?.type === "etape" ? `Le skill choisi sera ajouté à « ${choisi.titre || "Sans titre"} ».` : "Chaque skill choisi crée une nouvelle étape."}</SheetDescription>
               </SheetHeader>
               <div className="min-h-0 flex-1 p-3">{bibliotheque}</div>
             </SheetContent>
@@ -578,7 +578,7 @@ function Carte({ x, i, items, sel, setSel, etapeDe, deplace, supprime }: { x: El
               </span>
             ) : (
               <span className={cn("text-xs", ok ? "text-muted-foreground" : "text-destructive")}>
-                {ok ? (x.note || "Revoit l'étape à la lumière de ce qui a suivi.") : "La cible doit être placée avant ce retour, et pas juste avant."}
+                {ok ? (x.note || "Reprend l'étape en tenant compte de la suite.") : "L'étape visée doit être avant ce retour, mais pas juste avant."}
               </span>
             )}
           </button>
@@ -619,7 +619,7 @@ function Bibliotheque({ skills, masques, plus, glissable, cible }: { skills: Ski
     <Card className="h-full gap-3 py-4">
       <CardHeader className="px-4">
         <CardTitle className="text-base">Skills</CardTitle>
-        <CardDescription className="text-xs">{cible ? `« + » ajoute à « ${cible} ».` : glissable ? "Glisse un skill sur la piste ou sur une étape." : "« + » crée une nouvelle étape."}</CardDescription>
+        <CardDescription className="text-xs">{cible ? `« + » ajoute le skill à « ${cible} ».` : glissable ? "Glisse un skill sur la piste ou sur une étape." : "« + » crée une étape avec le skill."}</CardDescription>
       </CardHeader>
       <div className="relative px-4">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-6.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -716,12 +716,12 @@ function Inspecteur({ e, items, maj, supprime, ouvreBibli, large }: { e: ElemB; 
                 ))}
               </SelectContent>
             </Select>
-            {!retourOk(items, i) && <p className="text-sm text-destructive">Choisis une étape placée avant, et pas celle juste avant.</p>}
+            {!retourOk(items, i) && <p className="text-sm text-destructive">Choisis une étape placée avant ce retour, mais pas celle juste avant.</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="r-note">Ce qu'il faut revoir</Label>
             <Textarea id="r-note" value={e.note} onChange={(ev) => maj({ note: ev.target.value })} placeholder="Ex. : corrige ce que la relecture a trouvé." />
-            <p className="text-xs text-muted-foreground">L'étape est relancée avec ses skills ; elle relit son ancien livrable et en produit une version révisée.</p>
+            <p className="text-xs text-muted-foreground">L'étape est relancée avec ses skills : Claude relit l'ancien livrable et en écrit une version révisée.</p>
           </div>
         </CardContent>
       </Card>

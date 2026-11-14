@@ -44,7 +44,7 @@ export function Accueil() {
           <h1 tabIndex={-1} className="text-display outline-none">
             Que veux-tu <span className="bg-linear-to-r from-(--flux-braise) via-(--flux-rose) to-(--flux-ambre) bg-clip-text text-transparent">créer</span> ?
           </h1>
-          <p className="max-w-xl text-muted-foreground">Chaque flux enchaîne les bons skills, étape par étape. Relais lance Claude Code et suit l'avancement de tes projets.</p>
+          <p className="max-w-xl text-muted-foreground">Un flux enchaîne des skills, étape par étape. Relais lance Claude Code et suit l'avancement de tes projets.</p>
         </div>
         <Button size="lg" onClick={() => nouveauProjet()}>
           <FolderPlusIcon />
@@ -90,7 +90,7 @@ export function Accueil() {
                     <CardTitle className="text-lg">{p.nom}</CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-4">
-                    <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={150} legende="Survole un neurone pour voir son étape." survolSeul />
+                    <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={150} legende="Survole ou touche un neurone pour voir son étape." survolSeul />
                     <div className="grid gap-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="truncate text-muted-foreground">{p.courante < 0 ? "Flux terminé" : `${p.etapes[p.courante].titre}${p.etapes[p.courante].retour ? " (retour)" : ""}`}</span>
@@ -181,7 +181,7 @@ export function Accueil() {
               className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-muted-foreground transition-colors hover:border-ring hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               <PlusIcon className="size-6" />
-              <span className="font-medium">Créer un flux</span>
+              <span className="font-medium">Nouveau flux</span>
             </a>
           </div>
         )}

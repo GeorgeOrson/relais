@@ -67,7 +67,7 @@ export function NouveauProjet() {
       if (r.confirmer) {
         const ok = await confirmer({
           titre: "Rattacher ce dossier ?",
-          texte: `Il suit déjà le flux « ${r.confirmer.flux} », qui ne vient pas de ce Relais. Ses étapes seront envoyées à Claude Code comme consignes : ${r.confirmer.etapes.join(" · ")}. Le flux choisi ici sera ignoré.`,
+          texte: `Ce dossier suit déjà le flux « ${r.confirmer.flux} », créé par un autre Relais. Ses étapes deviendront des consignes pour Claude Code : ${r.confirmer.etapes.join(" · ")}. Le flux choisi ici sera ignoré.`,
           action: "Rattacher",
         })
         if (!ok) return
@@ -88,7 +88,7 @@ export function NouveauProjet() {
   // même nettoyage que le serveur, pour montrer le dossier réellement créé
   const net = nom.trim().replace(/[\\/:*?"<>|]/g, "").replace(/[. ]+$/, "")
   const cible = existant ? dossier : dossier && net ? `${dossier.replace(/[\\/]+$/, "")}\\${net}` : ""
-  const aide = erreurs.dossier ?? (occupe === "dossier" ? "Une fenêtre de sélection s'est ouverte sur ton bureau." : cible && `Projet : ${cible}`)
+  const aide = erreurs.dossier ?? (occupe === "dossier" ? "Choisis le dossier dans la fenêtre qui vient de s'ouvrir." : cible && `Projet : ${cible}`)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -119,7 +119,7 @@ export function NouveauProjet() {
           <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
             <div className="grid gap-0.5">
               <Label htmlFor="np-existant">Utiliser un dossier existant</Label>
-              <p className="text-xs text-muted-foreground">Sinon, un nouveau dossier est créé.</p>
+              <p className="text-xs text-muted-foreground">Sinon, Relais crée un nouveau dossier.</p>
             </div>
             <Switch
               id="np-existant"
@@ -179,7 +179,7 @@ export function NouveauProjet() {
           <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
             <div className="grid gap-0.5">
               <Label htmlFor="np-manuel">Valider chaque étape</Label>
-              <p className="text-xs text-muted-foreground">Désactivé, une seule session enchaîne tout le flux.</p>
+              <p className="text-xs text-muted-foreground">Sinon, une seule session enchaîne tout le flux.</p>
             </div>
             <Switch id="np-manuel" checked={manuel} onCheckedChange={setManuel} />
           </div>

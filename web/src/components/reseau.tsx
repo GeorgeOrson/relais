@@ -201,7 +201,7 @@ function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; cour
       return <animate attributeName={attr} dur={T} repeatCount="indefinite" values={vals.join(";")} keyTimes={kt.map(s3).join(";")} />
     }
     const k = f(c.i / Math.max(L - 1, 1))
-    const titre = `${c.e.titre} — ${c.e.skills.join(" + ") || "skill à trouver"}${passages.length > 1 ? ` · ${passages.length} passages` : ""}`
+    const titre = `${c.e.titre} : ${c.e.skills.join(" + ") || "skill à trouver"}${passages.length > 1 ? ` · ${passages.length} passages` : ""}`
     let etat = ""
     let cible = passages[0]
     if (o.projet) {

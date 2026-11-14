@@ -78,7 +78,7 @@ export function AppSidebar({ route }: { route: Route }) {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Projets en cours</SidebarGroupLabel>
+          <SidebarGroupLabel>Projets</SidebarGroupLabel>
           <SidebarGroupAction title="Nouveau projet" onClick={() => (ferme(), nouveauProjet())}>
             <PlusIcon />
             <span className="sr-only">Nouveau projet</span>
@@ -132,7 +132,7 @@ export function AppSidebar({ route }: { route: Route }) {
       <SidebarFooter className="hidden group-data-[collapsible=icon]:flex">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={`Thème : ${NOMS[theme]} (changer)`} onClick={() => setTheme(SUIVANT[theme])}>
+            <SidebarMenuButton tooltip={`Changer de thème (actuel : ${NOMS[theme]})`} onClick={() => setTheme(SUIVANT[theme])}>
               {theme === "light" ? <SunIcon /> : theme === "dark" ? <MoonIcon /> : <MonitorIcon />}
               <span>Thème : {NOMS[theme]}</span>
             </SidebarMenuButton>

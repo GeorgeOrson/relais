@@ -145,7 +145,7 @@ class Garde extends React.Component<{ children: React.ReactNode }, { erreur: Err
           <TriangleAlertIcon className="mb-2 size-8 text-destructive" />
           <CardTitle>
             <h1 tabIndex={-1} className="outline-none">
-              Cet écran a rencontré une erreur
+              Cet écran a planté
             </h1>
           </CardTitle>
         </CardHeader>
@@ -176,7 +176,7 @@ function ServeurArrete({ erreur, reessayer }: { erreur: string; reessayer: () =>
             Le serveur Relais ne répond pas
           </h1>
         </CardTitle>
-        <CardDescription>Il s'est sans doute arrêté. Relance-le avec Relais.bat, puis réessaie.</CardDescription>
+        <CardDescription>Il est sans doute arrêté. Relance Relais.bat, puis réessaie.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">{erreur}</p>

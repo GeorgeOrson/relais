@@ -52,7 +52,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
       }
       return
     }
-    if (action === "refaire" && !(await confirmer({ titre: `Refaire « ${e.titre} » ?`, texte: "Le livrable actuel est conservé avec un suffixe, et l'étape repasse à faire.", action: "Refaire" })))
+    if (action === "refaire" && !(await confirmer({ titre: `Refaire « ${e.titre} » ?`, texte: "Le livrable actuel est gardé sous un autre nom (.v1, .v2…) et l'étape repasse à faire.", action: "Refaire" })))
       return
     setOccupe(`${i}${action}`)
     try {
@@ -116,7 +116,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
               {p.courante < 0 ? "Toutes les étapes sont faites." : `En cours : ${p.etapes[p.courante].titre}${p.etapes[p.courante].retour ? " (retour)" : ""}`}
             </span>
           </div>
-          <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={210} legende="Survole un neurone pour voir son étape, clique pour y aller." onNoeud={montre} />
+          <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={210} legende="Survole un neurone pour voir son étape, clique dessus pour l'ouvrir." onNoeud={montre} />
         </CardContent>
       </Card>
 
@@ -278,7 +278,7 @@ function Actions(props: {
     </Button>
   )
   const liste: React.ReactNode[] = []
-  if (e.invalide) return <p className="text-sm text-destructive">Le chemin du livrable de cette étape sort du dossier livrables/ : Relais ne la touche pas.</p>
+  if (e.invalide) return <p className="text-sm text-destructive">Le livrable de cette étape pointe hors du dossier livrables/. Relais ne touche pas à cette étape.</p>
   if (e.statut === "termine") liste.push(b("valider", CheckIcon, "Valider", "default"), b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "valide") liste.push(b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "saute") liste.push(b("refaire", RotateCcwIcon, "Reprendre", "ghost"))
@@ -296,6 +296,6 @@ function Actions(props: {
       liste.push(b("lancer", PlayIcon, e.statut === "en-cours" ? "Rouvrir dans Claude Code" : p.auto ? "Lancer tout le flux" : "Lancer dans Claude Code", "default"), b("copier", CopyIcon, "Copier la consigne"))
     }
     liste.push(b("sauter", SkipForwardIcon, "Sauter", "ghost"))
-  } else return <p className="text-sm text-muted-foreground">Cette étape se lancera quand les précédentes seront faites.</p>
+  } else return <p className="text-sm text-muted-foreground">Tu pourras lancer cette étape quand les précédentes seront faites.</p>
   return <div className="flex flex-wrap gap-2">{liste}</div>
 }
