@@ -25,7 +25,14 @@ const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
 const texte = (v, max = 2000) => String(v ?? '').trim().slice(0, max);
 // Texte repris d'un fichier (etat.json, flux) avant d'entrer dans une consigne : caractères imprimables seulement.
-const propre = (v, max) => texte(String(v ?? '').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]+/g, ' '), max);
+// Avec lignes, les sauts de ligne restent, indent\u00e9s : une ligne ne peut pas ouvrir un titre ni une r\u00e8gle de la consigne.
+const INVISIBLES = '\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069';
+const propre = (v, max, lignes = false) => {
+  const s = String(v ?? '').replace(/\r\n?/g, '\n')
+    .replace(new RegExp(`[${lignes ? '\u0000-\u0008\u000b-\u001f' : '\u0000-\u001f'}${INVISIBLES}]+`, 'g'), ' ');
+  const t = texte(s, max);
+  return lignes ? t.replace(/\n/g, '\n  ') : t;
+};
 // Clé de comparaison des chemins Windows : casse et séparateur final ignorés.
 const cle = (d) => path.resolve(String(d)).toLowerCase();
 const RESERVE = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\.|$)/i;
@@ -42,12 +49,16 @@ const manque = (etape) => {
 };
 
 // ---------- Modèles de flux ----------
+// La page relit les flux toutes les 4 s : chaque problème n'est écrit qu'une fois dans la console.
+const signales = new Set();
+const signale = (msg) => { if (!signales.has(msg)) { signales.add(msg); console.error(msg); } };
 function listeFlux() {
   let files = [];
   try { files = fs.readdirSync(FLUX_DIR).filter((f) => f.endsWith('.json')); } catch { /* pas encore de dossier */ }
   return files.flatMap((f) => {
     const flux = readJson(path.join(FLUX_DIR, f), null);
-    try { return [{ ...flux, nom: texte(flux.nom, 80) || refus('nom'), etapes: nettoieEtapes(flux.etapes) }]; } catch { return []; } // flux abîmé : ignoré
+    try { return [{ ...flux, id: flux.id ?? path.basename(f, '.json'), nom: texte(flux.nom, 80) || refus('Le flux n’a pas de nom.'), etapes: nettoieEtapes(flux.etapes) }]; }
+    catch (err) { signale(`Flux ignoré, ${f} : ${err.message}`); return []; }
   })
     .sort((a, b) => (a.ordre ?? 99) - (b.ordre ?? 99) || a.nom.localeCompare(b.nom));
 }
@@ -136,7 +147,7 @@ function enregistreFlux(f) {
 }
 
 function supprimeFlux(id) {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(String(id))) refus('Flux inconnu.');
+  if (!ID.test(String(id))) refus('Flux inconnu.');
   fs.rmSync(path.join(FLUX_DIR, id + '.json'), { force: true });
 }
 
@@ -153,13 +164,13 @@ const connu = (dossier) => inscrit(dossier) || refus('Projet inconnu.');
 // Projet qu'on ne peut pas lire : dossier absent ou etat.json abîmé.
 const perdu = (dossier, abime = false) => ({ dossier, nom: path.basename(dossier), introuvable: true, abime, etapes: [] });
 // Le chemin résolu f reste-t-il sous base ?
-const dans = (base, f) => f.startsWith(base + path.sep);
+const dans = (base, f) => cle(f).startsWith(cle(base) + path.sep);
 
 // Chemin du livrable d'une étape, ou null s'il sort de <dossier>/livrables/ ou ne finit pas par .md (etat.json venu d'ailleurs).
 function livrable(dossier, e) {
   const base = path.join(dossier, 'livrables');
   const f = path.resolve(dossier, String(e.fichier ?? ''));
-  return dans(base, f) && /\.md$/.test(f) ? f : null;
+  return dans(base, f) && /\.md$/i.test(f) ? f : null;
 }
 
 function ecrisFluxMd(dossier, etat) {
@@ -202,23 +213,23 @@ function lisProjet(dossier) {
   return { ...etat, dossier, courante, etapes: etat.etapes.map((e) => ({ ...e, manque: manque(e) })) };
 }
 
-// Chemin absolu résolu du dossier existant indiqué, ou null.
-const dossierExistant = (existant) => (texte(existant) && path.isAbsolute(texte(existant)) ? path.resolve(texte(existant)) : null);
+// Dossier du projet : le dossier existant indiqué, ou <parent>/<nom>.
+function cible({ nom, parent, existant }) {
+  for (const c of [existant, parent]) if (texte(c) && !path.isAbsolute(texte(c))) refus('Indique un chemin de dossier complet, par exemple C:\\Users\\…');
+  if (texte(existant)) {
+    const dossier = path.resolve(texte(existant));
+    if (!fs.existsSync(dossier) || !fs.statSync(dossier).isDirectory()) refus('Ce dossier n’existe pas.');
+    return dossier;
+  }
+  const net = texte(nom, 80).replace(/[\\/:*?"<>|]/g, '').replace(/[. ]+$/, '');
+  if (!net) refus('Donne un nom au projet.');
+  if (RESERVE.test(net)) refus(`« ${net} » est un nom réservé par Windows : choisis-en un autre.`);
+  return path.join(path.resolve(texte(parent) || PARENT), net);
+}
 
 function creeProjet({ nom, fluxId, parent, existant, auto }) {
   const flux = listeFlux().find((f) => f.id === fluxId) || refus('Flux inconnu.');
-  let dossier;
-  for (const c of [existant, parent]) if (texte(c) && !path.isAbsolute(texte(c))) refus('Indique un chemin de dossier complet, par exemple C:\\Users\\…');
-  if (texte(existant)) {
-    dossier = dossierExistant(existant);
-    if (!fs.existsSync(dossier) || !fs.statSync(dossier).isDirectory()) refus('Ce dossier n’existe pas.');
-  } else {
-    const net = texte(nom, 80).replace(/[\\/:*?"<>|]/g, '').replace(/[. ]+$/, '');
-    if (!net) refus('Donne un nom au projet.');
-    if (/[&^%;!]/.test(net)) refus('Le nom du projet ne peut pas contenir & ^ % ; ou !.');
-    if (RESERVE.test(net)) refus(`« ${net} » est un nom réservé par Windows : choisis-en un autre.`);
-    dossier = path.join(path.resolve(texte(parent) || PARENT), net);
-  }
+  const dossier = cible({ nom, parent, existant });
   if (!fs.existsSync(etatFile(dossier))) { // sinon : projet Relais existant, on le rattache simplement
     if (fs.existsSync(path.join(dossier, 'FLUX.md'))) refus('Ce dossier contient déjà un FLUX.md qui ne vient pas de Relais.');
     fs.mkdirSync(path.join(dossier, '.relais'), { recursive: true });
@@ -238,11 +249,16 @@ function creeProjet({ nom, fluxId, parent, existant, auto }) {
 }
 
 // ---------- Consignes ----------
+// Étapes [e, n] que couvre un lancement de l'étape i. En auto : les suivantes encore à faire, pas celles « À valider ».
+const session = (p, i) => (p.auto
+  ? p.etapes.map((e, n) => [e, n]).filter(([e, n]) => n === i || (n > i && (e.statut === 'a-faire' || e.statut === 'en-cours')))
+  : [[p.etapes[i], i]]);
+
 function consigne(brut, i) {
   const p = {
     ...brut, nom: propre(brut.nom, 80), flux: { nom: propre(brut.flux?.nom, 80) },
     etapes: brut.etapes.map((e) => ({
-      ...e, titre: propre(e.titre, 80), objectif: propre(e.objectif), livrable: propre(e.livrable), fichier: propre(e.fichier, 200),
+      ...e, titre: propre(e.titre, 80), objectif: propre(e.objectif, 2000, true), livrable: propre(e.livrable, 2000, true), fichier: propre(e.fichier),
       skills: e.skills.map((s) => propre(s, 120)).filter(Boolean),
     })),
   };
@@ -255,7 +271,7 @@ function consigne(brut, i) {
     `- Livrable attendu : ${e.livrable || 'un résumé des décisions et du travail fait'}`,
     `- Fichier du livrable : \`${e.fichier}\``,
   ].filter(Boolean).join('\n');
-  const aFaire = p.auto ? p.etapes.map((e, n) => [e, n]).filter(([e, n]) => n >= i && e.statut !== 'valide' && e.statut !== 'saute') : [[p.etapes[i], i]];
+  const aFaire = session(p, i);
   const faits = p.etapes.filter((e, n) => n < i && e.statut === 'valide').map((e) => `- \`${e.fichier}\` (${e.titre})`);
   return [
     `# Relais — ${p.nom}`,
@@ -305,17 +321,17 @@ function agis({ dossier: demande, i, action }) {
   const p = lisProjet(dossier);
   if (p.introuvable) refus('Le dossier du projet est introuvable.');
   const e = p.etapes[i] || refus('Étape inconnue.');
-  if (e.invalide) refus('Le livrable de cette étape pointe hors du dossier livrables/. Relais ne touche pas à cette étape.');
+  if (e.invalide && action !== 'sauter') refus('Le livrable de cette étape pointe hors du dossier livrables/. Relais peut seulement la sauter.');
   if (action === 'lancer' || action === 'copier') {
     if (i !== p.courante) refus('Les étapes se font dans l’ordre : termine ou saute d’abord la précédente.');
-    const visees = p.auto ? p.etapes.filter((x, n) => n >= i && x.statut !== 'saute' && x.statut !== 'valide') : [e];
+    const visees = session(p, i).map(([x]) => x);
     const bloquee = visees.find((x) => x.manque);
     if (bloquee) refus(`L’étape « ${bloquee.titre} » n’a pas de skill installé. Trouve-lui un skill ou saute-la.`);
     const invalide = visees.find((x) => x.invalide);
     if (invalide) refus(`Le livrable de « ${invalide.titre} » pointe hors du dossier livrables/. Relais ne lance pas cette étape.`);
     const contenu = consigne(p, i);
     ecrisConsigne(dossier, contenu);
-    for (const x of visees) x.statut = 'en-cours'; // en mode auto, toute la session est en cours
+    for (const x of visees) if (x.statut !== 'termine') x.statut = 'en-cours'; // en auto, toute la session ; un livrable écrit attend sa validation
     sauve(dossier, p);
     return { consigne: contenu, dossier };
   }
@@ -329,7 +345,7 @@ function agis({ dossier: demande, i, action }) {
     const file = livrable(dossier, e); // finit par .md : la boucle ci-dessous trouve toujours un nom libre
     if (fs.existsSync(file)) { // l'ancien livrable est gardé avec un suffixe
       let n = 1;
-      const ancien = (k) => file.replace(/\.md$/, `.v${k}.md`);
+      const ancien = (k) => file.replace(/\.md$/i, `.v${k}.md`);
       while (fs.existsSync(ancien(n))) n++;
       fs.renameSync(file, ancien(n));
     }
@@ -343,6 +359,10 @@ function regleAuto({ dossier: demande, auto }) {
   const dossier = connu(demande);
   const etat = readJson(etatFile(dossier), null) || refus('Le dossier du projet est introuvable.');
   etat.auto = !!auto;
+  if (!etat.auto && Array.isArray(etat.etapes)) { // plus de session auto : les étapes suivantes ne sont plus en cours
+    const courante = etat.etapes.findIndex((e) => e.statut !== 'valide' && e.statut !== 'saute');
+    etat.etapes.forEach((e, n) => { if (n > courante && e.statut === 'en-cours') e.statut = 'a-faire'; });
+  }
   sauve(dossier, etat);
 }
 
@@ -404,16 +424,22 @@ function send(res, code, body, type = 'application/json; charset=utf-8') {
 
 function body(req) {
   return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', (c) => { data += c; if (data.length > 1e6) { reject(new Refus('Requête trop grosse.')); req.destroy(); } });
-    req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { reject(new Refus('JSON invalide.')); } });
+    let data = '', trop = false;
+    req.setEncoding('utf8'); // un caractère coupé entre deux morceaux reste entier
+    // trop gros : la suite est lue sans être gardée, pour que la réponse 400 arrive au client
+    req.on('data', (c) => { if (!trop && (data += c).length > 1e6) { trop = true; data = ''; } });
+    req.on('end', () => {
+      if (trop) return reject(new Refus('Requête trop grosse.'));
+      try { resolve(JSON.parse(data || '{}')); } catch { reject(new Refus('JSON invalide.')); }
+    });
+    req.on('error', reject);
   });
 }
 
 // Dossier qui a déjà un état Relais : rattaché tel quel. S'il vient d'ailleurs, l'interface montre d'abord ses étapes.
 function projet(b) {
-  const dossier = dossierExistant(b.existant);
-  const etat = dossier && readJson(etatFile(dossier), null);
+  const dossier = cible(b);
+  const etat = readJson(etatFile(dossier), null);
   if (!etat) return { dossier: creeProjet(b) };
   const flux = propre(etat.flux?.nom, 80) || 'inconnu';
   if (!inscrit(dossier) && !b.confirme)
@@ -429,7 +455,9 @@ const routes = {
   '/api/projet/auto': (b) => (regleAuto(b), {}),
   '/api/etape': async (b) => {
     const { dossier, ...r } = agis(b); // dossier : renvoyé par « lancer » et « copier », pas transmis à l'interface
-    if (b.action === 'lancer') await terminal(dossier);
+    if (b.action === 'lancer') { // terminal absent : l'interface reçoit la consigne pour la copier
+      try { await ouvreTerminal(dossier); } catch (err) { console.error(err); return { ...r, terminal: false }; }
+    }
     return r;
   },
   '/api/trouver': async (b) => (await trouveSkill(b), {}),

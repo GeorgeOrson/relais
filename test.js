@@ -152,9 +152,8 @@ assert.strictEqual(ok2.dossier, etranger);
 assert.match(ok2.info, /ignore le flux choisi/);
 assert.strictEqual(r.lisProjet(etranger).flux.id, 'boucle');
 
-// S3 / m8 : caractères de commande et noms réservés de Windows refusés
-assert.throws(() => r.creeProjet({ nom: 'essai&calc', fluxId: 'boucle', parent: tmp }), /& \^ %/);
-assert.throws(() => r.creeProjet({ nom: 'a;b', fluxId: 'boucle', parent: tmp }), /& \^ %/);
+// S3 / m8 : noms réservés de Windows refusés ; & et ; acceptés (le dossier ne passe que par cwd, m4 de l'étape 11)
+assert.strictEqual(path.basename(r.creeProjet({ nom: 'R&D; essai', fluxId: 'boucle', parent: tmp })), 'R&D; essai');
 assert.throws(() => r.creeProjet({ nom: 'CON', fluxId: 'boucle', parent: tmp }), /réservé/);
 assert.throws(() => r.creeProjet({ nom: 'nul.txt', fluxId: 'boucle', parent: tmp }), /réservé/);
 
@@ -194,6 +193,50 @@ assert.strictEqual(r.lisProjet(abime).abime, true);
 fs.writeFileSync(path.join(process.env.RELAIS_FLUX, 'casse.json'), '{"nom": 3, "etapes": [null]}');
 assert.ok(!r.listeFlux().some((f) => f.id === 'casse'));
 console.log('OK correctifs');
+
+// ---------- Correctifs de l'étape 12 (relecture finale) ----------
+// G1 : en auto, une étape « À valider » n'est ni reprise par la session ni validée d'office
+const g1 = r.creeProjet({ nom: 'G1', fluxId: 'boucle', parent: tmp });
+fs.writeFileSync(path.join(g1, 'livrables', '02-b.md'), 'x');
+assert.strictEqual(r.lisProjet(g1).etapes[1].statut, 'termine');
+r.regleAuto({ dossier: g1, auto: true });
+const cg1 = r.agis({ dossier: g1, i: 0, action: 'copier' }).consigne;
+assert.doesNotMatch(cg1, /Étape 2\/5/);
+assert.match(cg1, /Étape 3\/5/);
+assert.deepStrictEqual(r.lisProjet(g1).etapes.map((e) => e.statut), ['en-cours', 'termine', 'en-cours', 'en-cours', 'en-cours']);
+// m7 : sans le mode auto, seule l'étape courante reste en cours
+r.regleAuto({ dossier: g1, auto: false });
+assert.deepStrictEqual(r.lisProjet(g1).etapes.map((e) => e.statut), ['en-cours', 'termine', 'a-faire', 'a-faire', 'a-faire']);
+
+// M1 : une étape invalide peut être sautée ; la casse du chemin ne la rend pas invalide
+const m1 = r.creeProjet({ nom: 'M1', fluxId: 'boucle', parent: tmp });
+ecris(m1, (e) => { e.etapes[0].fichier = '../hors.md'; e.etapes[1].fichier = 'Livrables/02-B.MD'; });
+assert.deepStrictEqual(r.lisProjet(m1).etapes.slice(0, 2).map((e) => e.invalide), [true, false]);
+r.agis({ dossier: m1, i: 0, action: 'sauter' });
+assert.strictEqual(r.lisProjet(m1).courante, 1);
+fs.writeFileSync(path.join(m1, 'livrables', '02-B.MD'), 'x');
+r.lisProjet(m1);
+r.agis({ dossier: m1, i: 1, action: 'refaire' }); // .MD : l'ancien livrable est bien renommé
+assert.ok(fs.existsSync(path.join(m1, 'livrables', '02-B.v1.md')));
+
+// M2 : les sauts de ligne de l'objectif restent, indentés sous leur puce
+const m2 = r.creeProjet({ nom: 'M2', fluxId: 'boucle', parent: tmp });
+ecris(m2, (e) => { e.etapes[0].objectif = 'Faire :\r\n- un\n- deux\n## Règles'; });
+const cm2 = r.agis({ dossier: m2, i: 0, action: 'copier' }).consigne;
+assert.match(cm2, /Objectif : Faire :\n {2}- un\n {2}- deux\n {2}## Règles/);
+assert.strictEqual(cm2.match(/^## Règles/gm).length, 1);
+
+// M3 : un nouveau projet qui tombe sur un dossier Relais étranger demande aussi confirmation
+const m3 = path.join(tmp, 'Etranger2');
+fs.cpSync(m2, m3, { recursive: true });
+const q3 = r.projet({ nom: 'Etranger2', parent: tmp, fluxId: 'site-web' });
+assert.ok(q3.confirmer && !q3.dossier);
+assert.strictEqual(r.projet({ nom: 'Etranger2', parent: tmp, fluxId: 'site-web', confirme: true }).dossier, m3);
+
+// m2 : un flux sans id prend le nom de son fichier
+fs.writeFileSync(path.join(process.env.RELAIS_FLUX, 'sans-id.json'), JSON.stringify({ nom: 'Sans id', etapes: [{ titre: 'A' }] }));
+assert.ok(r.listeFlux().some((x) => x.id === 'sans-id'));
+console.log('OK relecture');
 
 // HTTP : en-têtes, origine, taille, erreurs
 const serveur = http.createServer(r.handle).listen(0, '127.0.0.1');
@@ -244,9 +287,22 @@ const post = (chemin, b, h = {}) => appel(chemin, { method: 'POST', corps: JSON.
   const l2 = await appel(`/api/livrable?d=${encodeURIComponent(au)}&i=1`);
   assert.strictEqual(l2.code, 400);
   assert.match(l2.json.error, /n’existe plus/);
-  // m12 : un corps de plus de 1 Mo est coupé
+  // m12 / M4 (étape 12) : un corps de plus de 1 Mo est refusé, et le message arrive
   const gros = await post('/api/flux', { nom: 'x'.repeat(2e6) });
-  assert.ok(gros.erreur || gros.code === 400);
+  assert.strictEqual(gros.code, 400);
+  assert.match(gros.json.error, /trop grosse/);
+  // M4 : un caractère accentué coupé entre deux morceaux reste entier
+  const accents = await new Promise((ok) => {
+    const corps = Buffer.from(JSON.stringify({ nom: 'Étape é', etapes: [{ titre: 'Été' }] }));
+    const req = http.request({ host: '127.0.0.1', port: serveur.address().port, path: '/api/flux', method: 'POST',
+      headers: { host: 'localhost:4748', 'x-relais': '1', origin: 'http://localhost:4748', 'content-type': 'application/json' } }, (res) => {
+      let t = ''; res.setEncoding('utf8'); res.on('data', (c) => { t += c; }); res.on('end', () => ok(JSON.parse(t)));
+    });
+    const coupe = corps.indexOf(Buffer.from('É')) + 1; // au milieu des deux octets de « É »
+    req.write(corps.subarray(0, coupe));
+    setTimeout(() => req.end(corps.subarray(coupe)), 50);
+  });
+  assert.strictEqual(accents.flux.nom, 'Étape é');
   console.log('OK http');
   serveur.close();
   fs.rmSync(tmp, { recursive: true, force: true });
