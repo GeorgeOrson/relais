@@ -48,7 +48,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
 import { lien, setGarde, va } from "@/hooks/use-route"
-import { api } from "@/lib/api"
+import { api, trouveSkill } from "@/lib/api"
 import { couleurs, deroule, estRetour, nomSkill, resume, slug, SOURCES, type Flux, type Item, type Skill } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
@@ -357,7 +357,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
 
           <section className="grid min-w-0 grid-cols-1 gap-4">
             <Card>
-              {/* Champs empilés : le nom tient en entier et la description s'écrit sur plusieurs lignes (UX m8). */}
+              {/* Champs empilés : le nom tient en entier et la description s'écrit sur plusieurs lignes. */}
               <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="f-nom">Nom du flux</Label>
@@ -660,7 +660,7 @@ function SkillLigne({ s, plus, glissable, cible }: { s: Skill; plus: (s: string)
         <span className="truncate text-sm font-medium">{nomSkill(s.name)}</span>
         <span className="truncate font-mono text-xs text-muted-foreground">{s.name}</span>
       </div>
-      {/* le libellé dit ce que fait le « + » selon qu'une étape est choisie ou non (UX m9) */}
+      {/* le libellé dit ce que fait le « + » selon qu'une étape est choisie ou non */}
       <Button
         variant="ghost"
         size="icon-sm"
@@ -679,15 +679,7 @@ function SkillLigne({ s, plus, glissable, cible }: { s: Skill; plus: (s: string)
 // ---------- Réglages de l'élément sélectionné ----------
 function Inspecteur({ e, items, maj, supprime, ouvreBibli, large }: { e: ElemB; items: ElemB[]; maj: (p: Partial<EtapeB> | Partial<RetourB>) => void; supprime: () => void; ouvreBibli: () => void; large: boolean }) {
   const i = items.indexOf(e)
-  const trouver = async () => {
-    if (e.type !== "etape") return
-    try {
-      await api("/api/trouver", e)
-      toast("Claude Code s'ouvre pour chercher un skill")
-    } catch (err) {
-      toast.error((err as Error).message)
-    }
-  }
+  const trouver = () => e.type === "etape" && trouveSkill(e)
   if (e.type === "retour") {
     const options = items.slice(0, i).filter((x): x is EtapeB => x.type === "etape")
     return (

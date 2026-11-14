@@ -23,12 +23,16 @@ import { lien, type Route } from "@/hooks/use-route"
 import { couleurs, faits } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
-const NOMS = { light: "Clair", dark: "Sombre", system: "Système" } as const
-const SUIVANT = { light: "dark", dark: "system", system: "light" } as const
+const THEMES = {
+  light: { nom: "Clair", Icone: SunIcon, suivant: "dark" },
+  dark: { nom: "Sombre", Icone: MoonIcon, suivant: "system" },
+  system: { nom: "Système", Icone: MonitorIcon, suivant: "light" },
+} as const
 
 export function AppSidebar({ route }: { route: Route }) {
   const { data, reglages, regler, nouveauProjet } = useRelais()
   const { theme, setTheme } = useTheme()
+  const actuel = THEMES[theme]
   const { setOpenMobile } = useSidebar()
   const ferme = () => setOpenMobile(false) // sur mobile, la barre se referme après un choix
   const projets = data?.projets.filter((p) => !p.introuvable) ?? []
@@ -128,13 +132,13 @@ export function AppSidebar({ route }: { route: Route }) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Barre repliée : les mêmes réglages en icônes (UX m6). */}
+      {/* Barre repliée : les mêmes réglages en icônes. */}
       <SidebarFooter className="hidden group-data-[collapsible=icon]:flex">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={`Changer de thème (actuel : ${NOMS[theme]})`} onClick={() => setTheme(SUIVANT[theme])}>
-              {theme === "light" ? <SunIcon /> : theme === "dark" ? <MoonIcon /> : <MonitorIcon />}
-              <span>Thème : {NOMS[theme]}</span>
+            <SidebarMenuButton tooltip={`Changer de thème (actuel : ${actuel.nom})`} onClick={() => setTheme(actuel.suivant)}>
+              <actuel.Icone />
+              <span>Thème : {actuel.nom}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
@@ -147,13 +151,7 @@ export function AppSidebar({ route }: { route: Route }) {
       </SidebarFooter>
       <SidebarFooter className="gap-3 group-data-[collapsible=icon]:hidden">
         <div className="flex rounded-lg bg-sidebar-accent p-0.5" role="radiogroup" aria-label="Thème">
-          {(
-            [
-              ["light", SunIcon, "Clair"],
-              ["dark", MoonIcon, "Sombre"],
-              ["system", MonitorIcon, "Système"],
-            ] as const
-          ).map(([v, Icone, nom]) => (
+          {(Object.keys(THEMES) as (keyof typeof THEMES)[]).map((v) => ({ v, ...THEMES[v] })).map(({ v, Icone, nom }) => (
             <button
               key={v}
               role="radio"

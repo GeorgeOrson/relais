@@ -15,8 +15,8 @@ import { Switch } from "@/components/ui/switch"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
 import { lien } from "@/hooks/use-route"
-import { api } from "@/lib/api"
-import { couleurs, faits, noeudsProjet, STATUTS, type Passage, type Projet } from "@/lib/relais"
+import { api, trouveSkill } from "@/lib/api"
+import { couleurs, faits, noeudsProjet, STATUTS, titreEtape, type Passage, type Projet } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
 export function ProjetPage({ dossier }: { dossier: string }) {
@@ -71,14 +71,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
     }
   }
 
-  const trouver = async (e: Passage) => {
-    try {
-      await api("/api/trouver", e)
-      toast("Claude Code s'ouvre pour chercher un skill", { description: "Ajoute-le ensuite à l'étape dans l'éditeur du flux." })
-    } catch (err) {
-      toast.error((err as Error).message)
-    }
-  }
+  const trouver = (e: Passage) => trouveSkill(e, "Ajoute-le ensuite à l'étape dans l'éditeur du flux.")
 
   const montre = (i: number) => {
     setOuverts((o) => new Set(o).add(i))
@@ -113,7 +106,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
             </span>
             <Progress value={(n / p.etapes.length) * 100} className="min-w-40 flex-1" aria-label="Avancement du flux" />
             <span className="text-sm text-muted-foreground">
-              {p.courante < 0 ? "Toutes les étapes sont faites." : `En cours : ${p.etapes[p.courante].titre}${p.etapes[p.courante].retour ? " (retour)" : ""}`}
+              {p.courante < 0 ? "Toutes les étapes sont faites." : `En cours : ${titreEtape(p.etapes[p.courante])}`}
             </span>
           </div>
           <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={210} legende="Survole un neurone pour voir son étape, clique dessus pour l'ouvrir." onNoeud={montre} />

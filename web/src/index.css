@@ -7,7 +7,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =====================================================================
-   Système de design de Relais (étape 7). Trois couches :
+   Système de design de Relais. Trois couches :
    1. primitives  : valeurs brutes (gris, teintes, rayon). Jamais utilisées directement dans un composant.
    2. sémantiques : rôles (fond, texte, bordure, statut, flux…), redéfinis pour le thème sombre.
    3. composants  : scène du réseau, pastilles, lueurs.
@@ -19,7 +19,6 @@
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
   --font-heading: var(--font-sans);
-  --font-display: var(--font-sans);
 
   /* Ombres et lueurs (valeurs par thème plus bas) : shadow-carte, shadow-flottant, shadow-lueur-flux. */
   --shadow-carte: var(--ombre-carte);
@@ -60,7 +59,6 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-sur-flux: var(--sur-flux);
-  --color-scene: var(--scene-bg);
   --color-scene-texte: var(--scene-texte);
   --color-scene-texte-doux: var(--scene-texte-doux);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -122,7 +120,7 @@
 
 /* ---------- 2. Sémantiques : thème clair ---------- */
 :root {
-  /* Couleurs de flux et de statut foncées en clair, pour tenir 4,5:1 sur le fond (UX M2). */
+  /* Couleurs de flux et de statut foncées en clair, pour tenir 4,5:1 sur le fond. */
   --flux-l: 0.53;
   --flux-c: 0.16;
   --statut-l: 0.5;
@@ -157,9 +155,8 @@
   --sur-flux: var(--n-0); /* texte posé sur une couleur de flux pleine */
   --ombre-carte: 0 1px 2px oklch(0.2 0.01 270 / 6%), 0 1px 1px oklch(0.2 0.01 270 / 4%);
   --ombre-flottant: 0 12px 32px -8px oklch(0.2 0.01 270 / 18%), 0 2px 6px oklch(0.2 0.01 270 / 8%);
-  --lueur: oklch(0.2 0.01 270 / 5%);
 
-  /* Scène du réseau : claire en thème clair (UX M8). */
+  /* Scène du réseau : claire en thème clair. */
   --scene-bg: var(--n-100);
   --scene-grille: oklch(0.2 0.01 270 / 9%);
   --scene-texte: var(--n-950);
@@ -204,7 +201,6 @@
   --sur-flux: var(--n-1000);
   --ombre-carte: 0 0 0 1px oklch(1 0 0 / 4%), 0 1px 2px oklch(0 0 0 / 40%);
   --ombre-flottant: 0 0 0 1px oklch(1 0 0 / 6%), 0 16px 40px -12px oklch(0 0 0 / 70%);
-  --lueur: oklch(1 0 0 / 6%);
 
   --scene-bg: var(--n-950);
   --scene-grille: oklch(1 0 0 / 7%);
@@ -323,7 +319,7 @@
 .axone { fill: none; stroke: var(--mix); stroke-width: 1.5; opacity: 0.22; }
 .axone.vif { opacity: 0.75; stroke-dasharray: 4 12; animation: coule 1.1s linear infinite; }
 @keyframes coule { to { stroke-dashoffset: -32; } }
-/* Hors écran ou au repos (cartes de l'accueil), le réseau ne bouge plus (UX M6). */
+/* Hors écran ou au repos (cartes de l'accueil), le réseau ne bouge plus. */
 .scene[data-pause] .vif { animation-play-state: paused; }
 .boucle { fill: none; stroke: var(--c2); stroke-width: 2; opacity: 0.35; stroke-linecap: round; }
 .boucle.vif { opacity: 1; stroke-dasharray: 8 8; animation: coule 1.4s linear infinite; filter: drop-shadow(0 0 5px var(--c2)); }
@@ -343,7 +339,7 @@
 .couche:hover text, .couche:focus-visible text, .couche.courante text { fill: var(--scene-texte); }
 .couche.valide .noyau, .couche.valide .halo { fill: var(--success); }
 .couche.termine .noyau, .couche.termine .halo { fill: var(--warning); }
-/* Étapes à faire ou sautées : le dessin s'efface, le libellé reste lisible (UX M4). */
+/* Étapes à faire ou sautées : le dessin s'efface, le libellé reste lisible. */
 .couche.a-faire:not(.courante) > :not(text), .couche.saute > :not(text) { opacity: 0.4; }
 .couche.saute .noyau { fill: none; stroke-dasharray: 2 2; }
 

@@ -37,14 +37,14 @@ export function FondNeuronal() {
     const pioche = <T,>(t: T[]) => t[(Math.random() * t.length) | 0]
     const image = (t: number) => {
       raf = requestAnimationFrame(image)
-      if (t - avant < 32) return // 30 images par seconde suffisent pour une dérive lente (UX M6)
+      if (t - avant < 32) return // 30 images par seconde suffisent pour une dérive lente
       avant = t
       const sombre = document.documentElement.classList.contains("dark")
       if (sombre !== theme) {
         theme = sombre
         lis()
       }
-      const fort = sombre ? 1 : 0.35 // en clair, le fond reste un murmure (UX c5)
+      const fort = sombre ? 1 : 0.35 // en clair, le fond reste un murmure
       c.clearRect(0, 0, w, h)
       V = N.map(() => [])
       for (const n of N) {

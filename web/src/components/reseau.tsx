@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { useCalme } from "@/hooks/use-calme"
-import { hash, type Noeud } from "@/lib/relais"
+import { hash, titreEtape, type Noeud } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
 // Réseau neuronal d'un flux : un nœud par étape (un neurone par skill), des axones vers l'étape suivante,
@@ -63,10 +63,13 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
     <div
       className={cn("scene", className)}
       data-pause={joue ? undefined : ""}
-      onPointerEnter={() => setActif(true)}
-      onPointerLeave={() => setActif(false)}
-      onFocusCapture={() => setActif(true)}
-      onBlurCapture={() => setActif(false)}
+      // l'état actif ne sert qu'en survolSeul : ailleurs, pas de rendu à chaque survol
+      {...(survolSeul && {
+        onPointerEnter: () => setActif(true),
+        onPointerLeave: () => setActif(false),
+        onFocusCapture: () => setActif(true),
+        onBlurCapture: () => setActif(false),
+      })}
     >
       <div ref={boite} className="relative">
         {dessin && (
@@ -77,7 +80,7 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
             height={hauteur}
             viewBox={`0 0 ${W} ${hauteur}`}
             role={onNoeud ? "group" : "img"}
-            aria-label={onNoeud ? "Carte des étapes" : `Réseau : ${noeuds.map((n) => n.titre + (n.retour ? " (retour)" : "")).join(", ")}`}
+            aria-label={onNoeud ? "Carte des étapes" : `Réseau : ${noeuds.map(titreEtape).join(", ")}`}
             onPointerOver={(e) => setSurvol((e.target as Element).closest(".couche")?.getAttribute("data-l") ?? null)}
             onPointerLeave={() => setSurvol(null)}
             onFocus={(e) => setSurvol((e.target as Element).closest(".couche")?.getAttribute("data-l") ?? null)}

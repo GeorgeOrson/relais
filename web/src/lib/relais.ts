@@ -42,6 +42,8 @@ export const SOURCES: Record<Source, string> = {
 // Un nœud du réseau : une étape, ou un second passage sur une étape (retour).
 export type Noeud = { ref: string; titre: string; skills: string[]; statut?: Statut; retour?: boolean }
 
+export const titreEtape = (e: { titre: string; retour?: boolean }) => e.titre + (e.retour ? " (retour)" : "")
+
 // Un retour renvoie à une étape déjà passée (1 > 2 > 3 > 2 > 4). Déroulé, il devient un second passage sur cette étape.
 export function deroule(items: Item[], idDe: (e: Etape) => string, cibleDe: (r: Retour) => string): Noeud[] {
   const par = new Map<string, Etape>()

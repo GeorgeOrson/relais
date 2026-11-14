@@ -10,7 +10,7 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
 import { lien } from "@/hooks/use-route"
 import { api } from "@/lib/api"
-import { couleurs, derouleFlux, faits, noeudsProjet, resume } from "@/lib/relais"
+import { couleurs, derouleFlux, faits, noeudsProjet, resume, titreEtape } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
 // Accueil : d'abord reprendre ce qui est en cours, ensuite démarrer autre chose.
@@ -80,7 +80,7 @@ export function Accueil() {
                   </CardFooter>
                 </Card>
               ) : (
-                // un projet seul prend deux colonnes au lieu de laisser deux tiers vides (UX c2)
+                // un projet seul prend deux colonnes au lieu de laisser deux tiers vides
                 <Card key={p.dossier} style={couleurs(data.flux, p.flux.id)} className={cn("transition-shadow duration-150 hover:shadow-flottant", projets.length === 1 && "@xl:col-span-2")}>
                   <CardHeader>
                     <CardDescription className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export function Accueil() {
                     <Reseau noeuds={noeudsProjet(p)} projet courante={p.courante} hauteur={150} legende="Survole ou touche un neurone pour voir son étape." survolSeul />
                     <div className="grid gap-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="truncate text-muted-foreground">{p.courante < 0 ? "Flux terminé" : `${p.etapes[p.courante].titre}${p.etapes[p.courante].retour ? " (retour)" : ""}`}</span>
+                        <span className="truncate text-muted-foreground">{p.courante < 0 ? "Flux terminé" : titreEtape(p.etapes[p.courante])}</span>
                         <span className="tabular-nums">
                           {faits(p)}/{p.etapes.length}
                         </span>
@@ -158,7 +158,7 @@ export function Accueil() {
                   </CardTitle>
                   <CardDescription>{f.description}</CardDescription>
                 </CardHeader>
-                {/* le nombre de retours est déjà dans la légende : plus de badge qui décale les pieds de carte (UX c3) */}
+                {/* le nombre de retours est déjà dans la légende : plus de badge qui décale les pieds de carte */}
                 <CardContent>
                   <Reseau noeuds={derouleFlux(f)} hauteur={150} legende={resume(f.etapes)} survolSeul />
                 </CardContent>

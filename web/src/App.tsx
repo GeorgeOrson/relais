@@ -49,7 +49,7 @@ export default function App() {
     scrollTo(0, 0)
     requestAnimationFrame(() => document.querySelector<HTMLElement>("main h1")?.focus({ preventScroll: true }))
   }, [route])
-  // L'en-tête ne répète le titre que lorsque le h1 de la page est sorti de l'écran (UX c1).
+  // L'en-tête ne répète le titre que lorsque le h1 de la page est sorti de l'écran.
   React.useEffect(() => {
     let io: IntersectionObserver | undefined
     const id = requestAnimationFrame(() => {
@@ -82,7 +82,7 @@ export default function App() {
               <span className="max-sm:hidden">Rechercher</span>
               <kbd className="pointer-events-none ml-2 rounded border bg-muted px-1.5 font-mono text-xs max-sm:hidden">Ctrl K</kbd>
             </Button>
-            {/* sur l'accueil, le bouton du titre suffit (UX m3) ; ailleurs, il reste secondaire pour laisser l'action de la page en tête */}
+            {/* sur l'accueil, le bouton du titre suffit ; ailleurs, il reste secondaire pour laisser l'action de la page en tête */}
             {route.vue !== "accueil" && (
               <Button variant="outline" size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet(fluxVu)} disabled={coupe} aria-label="Nouveau projet">
                 <FolderPlusIcon />
@@ -106,9 +106,9 @@ export default function App() {
               <fieldset disabled={coupe} className="contents">
                 <Garde key={JSON.stringify(route)}>
                   {route.vue === "projet" ? (
-                    <ProjetPage key={route.dossier} dossier={route.dossier} />
+                    <ProjetPage dossier={route.dossier} />
                   ) : route.vue === "flux" ? (
-                    <Atelier key={route.id} id={route.id} />
+                    <Atelier id={route.id} />
                   ) : route.vue === "skills" ? (
                     <Skills />
                   ) : (
