@@ -19,6 +19,7 @@ export function FondNeuronal() {
     type N = { x: number; y: number; vx: number; vy: number; r: number; c: number; f: number }
     let w = 0, h = 0, N: N[] = [], P: { a: number; b: number; t: number; v: number }[] = [], V: number[][] = []
     let raf = 0
+    let avant = 0
 
     const taille = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2)
@@ -27,20 +28,23 @@ export function FondNeuronal() {
       cv.width = w * dpr
       cv.height = h * dpr
       c.setTransform(dpr, 0, 0, dpr, 0, 0)
-      N = Array.from({ length: Math.min(55, Math.round((w * h) / 26000)) }, () => ({
+      N = Array.from({ length: Math.min(40, Math.round((w * h) / 32000)) }, () => ({
         x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
         r: 1 + Math.random() * 1.3, c: (Math.random() * 4) | 0, f: 0,
       }))
       P = []
     }
     const pioche = <T,>(t: T[]) => t[(Math.random() * t.length) | 0]
-    const image = () => {
+    const image = (t: number) => {
+      raf = requestAnimationFrame(image)
+      if (t - avant < 32) return // 30 images par seconde suffisent pour une dérive lente (UX M6)
+      avant = t
       const sombre = document.documentElement.classList.contains("dark")
       if (sombre !== theme) {
         theme = sombre
         lis()
       }
-      const fort = sombre ? 1 : 0.55
+      const fort = sombre ? 1 : 0.35 // en clair, le fond reste un murmure (UX c5)
       c.clearRect(0, 0, w, h)
       V = N.map(() => [])
       for (const n of N) {
@@ -90,7 +94,6 @@ export function FondNeuronal() {
         c.arc(n.x, n.y, n.r + n.f * 2, 0, 7)
         c.fill()
       }
-      raf = requestAnimationFrame(image)
     }
     taille()
     raf = requestAnimationFrame(image)

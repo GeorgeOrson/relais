@@ -14,6 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCalme } from "@/hooks/use-calme"
 import { useRelais } from "@/hooks/use-relais"
 import { lien, useRoute, va, type Route } from "@/hooks/use-route"
+import { cn } from "@/lib/utils"
 import { Accueil } from "@/pages/accueil"
 import { Atelier } from "@/pages/atelier"
 import { ProjetPage } from "@/pages/projet"
@@ -30,6 +31,8 @@ export default function App() {
   const { data, erreur, rafraichir, reglages, nouveauProjet } = useRelais()
   const [cmd, setCmd] = React.useState(false)
   const calme = useCalme()
+  const [h1Visible, setH1Visible] = React.useState(true)
+  const charge = !!data
   const coupe = !!erreur && !!data // serveur arrêté après le premier chargement
   // la boîte « Nouveau projet » présélectionne le flux qu'on regarde
   const fluxVu = route.vue === "flux" ? route.id : route.vue === "projet" ? data?.projets.find((p) => p.dossier === route.dossier)?.flux?.id : undefined
@@ -46,6 +49,18 @@ export default function App() {
     scrollTo(0, 0)
     requestAnimationFrame(() => document.querySelector<HTMLElement>("main h1")?.focus({ preventScroll: true }))
   }, [route])
+  // L'en-tête ne répète le titre que lorsque le h1 de la page est sorti de l'écran (UX c1).
+  React.useEffect(() => {
+    let io: IntersectionObserver | undefined
+    const id = requestAnimationFrame(() => {
+      const h1 = document.querySelector("main h1")
+      setH1Visible(!!h1)
+      if (!h1) return
+      io = new IntersectionObserver(([e]) => setH1Visible(e.isIntersecting), { rootMargin: "-56px 0px 0px 0px" })
+      io.observe(h1)
+    })
+    return () => (cancelAnimationFrame(id), io?.disconnect())
+  }, [route, charge])
 
   return (
     <TooltipProvider>
@@ -58,17 +73,22 @@ export default function App() {
         <SidebarInset className="bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md sm:px-4">
             <SidebarTrigger />
-            <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
-            <p className="min-w-0 flex-1 truncate text-sm font-medium">{titre}</p>
+            <Separator orientation="vertical" className="mr-1 self-center! data-[orientation=vertical]:h-5" />
+            <p className={cn("min-w-0 flex-1 truncate text-sm font-medium transition-opacity duration-150", h1Visible && "opacity-0")} aria-hidden={h1Visible}>
+              {titre}
+            </p>
             <Button variant="outline" size="sm" className="text-muted-foreground max-sm:size-9 max-sm:p-0" onClick={() => setCmd(true)} aria-label="Rechercher (Ctrl+K)">
               <SearchIcon />
               <span className="max-sm:hidden">Rechercher</span>
               <kbd className="pointer-events-none ml-2 rounded border bg-muted px-1.5 font-mono text-xs max-sm:hidden">Ctrl K</kbd>
             </Button>
-            <Button size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet(fluxVu)} disabled={coupe} aria-label="Nouveau projet">
-              <FolderPlusIcon />
-              <span className="max-sm:hidden">Nouveau projet</span>
-            </Button>
+            {/* sur l'accueil, le bouton du titre suffit (UX m3) ; ailleurs, il reste secondaire pour laisser l'action de la page en tête */}
+            {route.vue !== "accueil" && (
+              <Button variant="outline" size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet(fluxVu)} disabled={coupe} aria-label="Nouveau projet">
+                <FolderPlusIcon />
+                <span className="max-sm:hidden">Nouveau projet</span>
+              </Button>
+            )}
           </header>
           {coupe && (
             <div role="alert" className="sticky top-14 z-20 flex items-center gap-2 border-b border-destructive/40 bg-destructive/15 px-4 py-2 text-sm backdrop-blur-md">

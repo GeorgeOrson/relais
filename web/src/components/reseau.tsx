@@ -15,6 +15,7 @@ type Props = {
   courante?: number
   legende?: string // texte affiché quand aucun nœud n'est survolé
   onNoeud?: (passage: number) => void
+  survolSeul?: boolean // le signal ne circule qu'au survol ou au focus (cartes de l'accueil)
   className?: string
 }
 
@@ -27,29 +28,50 @@ function alea(a: number) {
   }
 }
 
-export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoeud, className }: Props) {
+export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoeud, survolSeul, className }: Props) {
   const boite = React.useRef<HTMLDivElement>(null)
+  const svg = React.useRef<SVGSVGElement>(null)
   const [W, setW] = React.useState(0)
   const [survol, setSurvol] = React.useState<string | null>(null)
+  const [visible, setVisible] = React.useState(false)
+  const [actif, setActif] = React.useState(false)
   const calme = useCalme()
+  // Les animations ne tournent que si le dessin est à l'écran (et, en survolSeul, survolé ou focalisé).
+  const joue = visible && (!survolSeul || actif)
 
   React.useEffect(() => {
     const el = boite.current
     if (!el) return
     const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)))
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting))
     ro.observe(el)
-    return () => ro.disconnect()
+    io.observe(el)
+    return () => (ro.disconnect(), io.disconnect())
   }, [])
 
   const cle = JSON.stringify(noeuds) + W + hauteur + courante + !!projet + calme
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const dessin = React.useMemo(() => (W ? dessine(noeuds, W, hauteur, { projet, courante, clic: !!onNoeud, calme }) : null), [cle])
 
+  // SMIL n'obéit pas au CSS : on le met en pause à la main.
+  React.useEffect(() => {
+    if (joue) svg.current?.unpauseAnimations()
+    else svg.current?.pauseAnimations()
+  }, [joue, dessin])
+
   return (
-    <div className={cn("scene", className)}>
+    <div
+      className={cn("scene", className)}
+      data-pause={joue ? undefined : ""}
+      onPointerEnter={() => setActif(true)}
+      onPointerLeave={() => setActif(false)}
+      onFocusCapture={() => setActif(true)}
+      onBlurCapture={() => setActif(false)}
+    >
       <div ref={boite} className="relative">
         {dessin && (
           <svg
+            ref={svg}
             className="reseau"
             width={W}
             height={hauteur}
@@ -97,7 +119,7 @@ function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; cour
   const S = seq.length
   const pad = Math.min(70, Math.max(26, W / (L * 2.4)))
   const ecart = L > 1 ? (W - 2 * pad) / (L - 1) : W
-  const labels = ecart >= 86 // assez de place pour écrire le nom de chaque étape
+  const labels = ecart >= 72 // assez de place pour écrire le nom de chaque étape
   const haut = 46
   const bas = labels ? 30 : 8
   const rnd = alea(hash(seq.map((e) => e.ref + e.titre + e.skills).join("|")))
@@ -192,7 +214,11 @@ function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; cour
         cible = [...passages].reverse().find((p) => o.courante === undefined || o.courante < 0 || p < o.courante) ?? passages[0]
       }
     }
-    const court = c.e.titre.length > 16 ? c.e.titre.slice(0, 15) + "…" : c.e.titre
+    // Libellé coupé à la largeur d'un écart (≈ 6,6 px par caractère à 12 px) et gardé dans la scène.
+    const max = Math.max(4, Math.floor((ecart - 10) / 6.6))
+    const court = c.e.titre.length > max ? c.e.titre.slice(0, max - 1) + "…" : c.e.titre
+    const demi = court.length * 3.3
+    const tx = Math.min(W - demi - 4, Math.max(demi + 4, c.x))
     return (
       <g
         key={c.e.ref}
@@ -230,7 +256,7 @@ function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; cour
           )
         })}
         {labels && (
-          <text x={f(c.x)} y={H - 9}>
+          <text x={f(tx)} y={H - 9}>
             {court}
           </text>
         )}

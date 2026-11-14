@@ -23,6 +23,9 @@ import { lien, type Route } from "@/hooks/use-route"
 import { couleurs, faits } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
+const NOMS = { light: "Clair", dark: "Sombre", system: "Système" } as const
+const SUIVANT = { light: "dark", dark: "system", system: "light" } as const
+
 export function AppSidebar({ route }: { route: Route }) {
   const { data, reglages, regler, nouveauProjet } = useRelais()
   const { theme, setTheme } = useTheme()
@@ -37,7 +40,11 @@ export function AppSidebar({ route }: { route: Route }) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="Relais">
               <a href={lien.accueil()} onClick={ferme}>
-                <img src="/relais.svg" alt="" className="size-8 shrink-0" />
+                <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+                  <svg viewBox="0 0 32 32" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 16h12M15 10l6 6-6 6M25 9v14" />
+                  </svg>
+                </span>
                 <span className="text-base font-semibold tracking-titre">Relais</span>
               </a>
             </SidebarMenuButton>
@@ -121,6 +128,23 @@ export function AppSidebar({ route }: { route: Route }) {
         </SidebarGroup>
       </SidebarContent>
 
+      {/* Barre repliée : les mêmes réglages en icônes (UX m6). */}
+      <SidebarFooter className="hidden group-data-[collapsible=icon]:flex">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip={`Thème : ${NOMS[theme]} (changer)`} onClick={() => setTheme(SUIVANT[theme])}>
+              {theme === "light" ? <SunIcon /> : theme === "dark" ? <MoonIcon /> : <MonitorIcon />}
+              <span>Thème : {NOMS[theme]}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip={reglages.fond ? "Fond animé : activé" : "Fond animé : désactivé"} aria-pressed={reglages.fond} onClick={() => regler({ fond: !reglages.fond })}>
+              <SparklesIcon className={cn(!reglages.fond && "opacity-40")} />
+              <span>Fond animé</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarFooter className="gap-3 group-data-[collapsible=icon]:hidden">
         <div className="flex rounded-lg bg-sidebar-accent p-0.5" role="radiogroup" aria-label="Thème">
           {(

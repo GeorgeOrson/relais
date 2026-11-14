@@ -323,6 +323,8 @@
 .axone { fill: none; stroke: var(--mix); stroke-width: 1.5; opacity: 0.22; }
 .axone.vif { opacity: 0.75; stroke-dasharray: 4 12; animation: coule 1.1s linear infinite; }
 @keyframes coule { to { stroke-dashoffset: -32; } }
+/* Hors écran ou au repos (cartes de l'accueil), le réseau ne bouge plus (UX M6). */
+.scene[data-pause] .vif { animation-play-state: paused; }
 .boucle { fill: none; stroke: var(--c2); stroke-width: 2; opacity: 0.35; stroke-linecap: round; }
 .boucle.vif { opacity: 1; stroke-dasharray: 8 8; animation: coule 1.4s linear infinite; filter: drop-shadow(0 0 5px var(--c2)); }
 .influx { fill: var(--scene-influx); opacity: 0; filter: drop-shadow(0 0 4px var(--c1)); }

@@ -119,7 +119,7 @@ export function Atelier({ id }: { id: string }) {
   if (id !== "nouveau" && !flux && !ouvert)
     return (
       <div className="grid gap-2">
-        <h1 tabIndex={-1} className="text-2xl font-semibold outline-none">
+        <h1 tabIndex={-1} className="text-titre outline-none">
           Flux introuvable
         </h1>
         <a className="text-muted-foreground underline" href={lien.accueil()}>
@@ -307,7 +307,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
   ) : null
 
   return (
-    <div className="grid gap-6" style={couleurs(tousFlux, b.id)}>
+    <div className="grid grid-cols-1 gap-6" style={couleurs(tousFlux, b.id)}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h1 tabIndex={-1} className="text-titre outline-none">
@@ -352,19 +352,20 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
       )}
 
       <DndContext accessibility={accessibilite} sensors={sensors} collisionDetection={collision} onDragStart={debut} onDragEnd={fin} onDragCancel={() => setActif(null)}>
-        <div className="grid items-start gap-6 @5xl:grid-cols-[260px_minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 items-start gap-6 @5xl:grid-cols-[260px_minmax(0,1fr)_320px]">
           {large && <aside className="sticky top-20 max-h-[calc(100svh-6rem)]">{bibliotheque}</aside>}
 
-          <section className="grid min-w-0 gap-4">
+          <section className="grid min-w-0 grid-cols-1 gap-4">
             <Card>
-              <CardContent className="grid gap-4 sm:grid-cols-[1fr_2fr]">
+              {/* Champs empilés : le nom tient en entier et la description s'écrit sur plusieurs lignes (UX m8). */}
+              <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="f-nom">Nom du flux</Label>
                   <Input id="f-nom" value={b.nom} onChange={(e) => setB({ ...b, nom: e.target.value })} placeholder="Ex. : Création de podcast" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="f-desc">Description</Label>
-                  <Input id="f-desc" value={b.description} onChange={(e) => setB({ ...b, description: e.target.value })} placeholder="En une phrase : de quoi à quoi." />
+                  <Textarea id="f-desc" rows={2} className="min-h-0" value={b.description} onChange={(e) => setB({ ...b, description: e.target.value })} placeholder="En une phrase : de quoi à quoi." />
                 </div>
               </CardContent>
             </Card>
@@ -373,6 +374,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
               noeuds={deroule(versItems(b), (e) => e.id!, (r) => r.retour)}
               hauteur={190}
               legende={items.length ? resume(versItems(b)) : "Ajoute une étape pour voir le réseau."}
+              survolSeul
             />
 
             {!large && (
@@ -499,7 +501,7 @@ function Piste(props: {
           setNodeRef(el)
         }}
         aria-label="Étapes du flux"
-        className={cn("relative grid gap-3 rounded-xl pl-11 transition-colors", isOver && actif?.type === "skill" && "bg-primary/5 ring-2 ring-primary/40")}
+        className={cn("relative grid grid-cols-1 gap-3 rounded-xl pl-11 transition-colors", isOver && actif?.type === "skill" && "bg-primary/5 ring-2 ring-primary/40")}
       >
         <span aria-hidden className={cn("pointer-events-none absolute top-6 bottom-6 left-[37px] border-l-2 border-dashed border-border transition-opacity", actif && "opacity-0")} />
         <svg aria-hidden className={cn("pointer-events-none absolute inset-y-0 left-0 h-full w-11 overflow-visible transition-opacity", actif && "opacity-0")} style={{ color: "var(--c2)" }}>
@@ -629,7 +631,7 @@ function Bibliotheque({ skills, masques, plus, glissable, cible }: { skills: Ski
             <div key={src} className="grid gap-1">
               <p className="px-1 text-xs font-medium text-muted-foreground">{SOURCES[src]}</p>
               {liste.map((s) => (
-                <SkillLigne key={s.name} s={s} plus={plus} glissable={glissable} />
+                <SkillLigne key={s.name} s={s} plus={plus} glissable={glissable} cible={cible} />
               ))}
             </div>
           ))}
@@ -645,7 +647,7 @@ function Bibliotheque({ skills, masques, plus, glissable, cible }: { skills: Ski
   )
 }
 
-function SkillLigne({ s, plus, glissable }: { s: Skill; plus: (s: string) => void; glissable: boolean }) {
+function SkillLigne({ s, plus, glissable, cible }: { s: Skill; plus: (s: string) => void; glissable: boolean; cible: string | null }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `skill:${s.name}`, data: { type: "skill", skill: s.name }, disabled: !glissable })
   return (
     <div
@@ -658,7 +660,16 @@ function SkillLigne({ s, plus, glissable }: { s: Skill; plus: (s: string) => voi
         <span className="truncate text-sm font-medium">{nomSkill(s.name)}</span>
         <span className="truncate font-mono text-xs text-muted-foreground">{s.name}</span>
       </div>
-      <Button variant="ghost" size="icon-sm" className="shrink-0 opacity-70 group-hover:opacity-100" aria-label={`Ajouter ${s.name}`} onClick={() => plus(s.name)} onPointerDown={(e) => e.stopPropagation()}>
+      {/* le libellé dit ce que fait le « + » selon qu'une étape est choisie ou non (UX m9) */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0 text-muted-foreground group-hover:text-foreground"
+        aria-label={cible ? `Ajouter ${nomSkill(s.name)} à « ${cible} »` : `Créer une étape avec ${nomSkill(s.name)}`}
+        title={cible ? `Ajouter à « ${cible} »` : "Créer une étape avec ce skill"}
+        onClick={() => plus(s.name)}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <PlusIcon />
       </Button>
     </div>
@@ -735,7 +746,7 @@ function Inspecteur({ e, items, maj, supprime, ouvreBibli, large }: { e: ElemB; 
             {e.skills.map((s) => (
               <Badge key={s} variant="secondary" className="h-7 gap-1 pr-1 font-mono font-normal">
                 {s}
-                <button className="grid size-5 place-items-center rounded-full hover:bg-background/60" aria-label={`Retirer ${s}`} onClick={() => maj({ skills: e.skills.filter((x) => x !== s) })}>
+                <button className="grid size-6 place-items-center rounded-full hover:bg-background/60" aria-label={`Retirer ${s}`} onClick={() => maj({ skills: e.skills.filter((x) => x !== s) })}>
                   <XIcon className="size-3" />
                 </button>
               </Badge>

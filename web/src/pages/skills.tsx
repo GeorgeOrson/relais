@@ -69,7 +69,11 @@ export function Skills() {
           </Card>
         )
       })}
-      {!trouves.length && <p className="text-muted-foreground">Aucun skill ne correspond à « {q} ».</p>}
+      {!trouves.length && (
+        <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">
+          {q ? `Aucun skill ne correspond à « ${q} ».` : "Aucun skill installé. Ajoute-en dans Claude Code, puis recharge la page."}
+        </p>
+      )}
     </div>
   )
 }

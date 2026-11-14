@@ -31,7 +31,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
   if (!p || p.introuvable)
     return (
       <div className="grid gap-2">
-        <h1 tabIndex={-1} className="text-2xl font-semibold outline-none">
+        <h1 tabIndex={-1} className="text-titre outline-none">
           Projet introuvable
         </h1>
         <p className="text-muted-foreground">
@@ -137,7 +137,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
                 <span aria-hidden className={cn("absolute top-10 bottom-[-0.75rem] left-4 w-px sm:left-5", e.statut === "valide" || e.statut === "saute" ? "bg-success/60" : "bg-border")} />
               )}
               <Pastille e={e} i={i} courante={courante} />
-              <Card className={cn("gap-0 py-0 transition-shadow", courante && "lisere shadow-lg", e.statut === "saute" && "opacity-60", e.statut === "a-faire" && !courante && "opacity-80")}>
+              <Card className={cn("gap-0 py-0 transition-shadow", courante && "lisere shadow-flottant", e.statut === "saute" && "opacity-60", e.statut === "a-faire" && !courante && "opacity-80")}>
                 <button
                   className="flex w-full items-center gap-3 rounded-xl p-4 text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                   onClick={courante ? undefined : bascule}
