@@ -70,7 +70,8 @@ export default function App() {
       {reglages.fond && !calme && <FondNeuronal />}
       <SidebarProvider>
         <AppSidebar route={route} />
-        <SidebarInset className="bg-transparent">
+        {/* min-w-0 : sans ça, un long titre dans l'en-tête élargit la page (Atelier entre 768 et 880 px) */}
+        <SidebarInset className="min-w-0 bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md sm:px-4">
             <SidebarTrigger />
             <Separator orientation="vertical" className="mr-1 self-center! data-[orientation=vertical]:h-5" />
