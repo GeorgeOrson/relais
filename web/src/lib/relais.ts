@@ -68,15 +68,16 @@ export function resume(items: Item[]) {
 
 export const faits = (p: Projet) => p.etapes.filter((e) => e.statut === "valide" || e.statut === "saute").length
 
-// Une paire de couleurs chaudes par flux, utilisée seulement dans les réseaux et les pastilles.
+// Une paire de couleurs par flux : la seule couleur de l'interface. Les valeurs sont les tokens
+// --flux-* de index.css, qui changent de clarté selon le thème.
 const PAL: [string, string][] = [
-  ["#FF5B1F", "#FFB21F"],
-  ["#C6FF3D", "#3DFFA8"],
-  ["#FF2E88", "#FF8A3D"],
-  ["#FF7AF5", "#FFD23D"],
-  ["#FFD23D", "#C6FF3D"],
-  ["#FF8A3D", "#FF2E88"],
-]
+  ["braise", "ambre"],
+  ["citron", "menthe"],
+  ["rose", "mandarine"],
+  ["orchidee", "soleil"],
+  ["soleil", "citron"],
+  ["mandarine", "rose"],
+].map(([a, b]) => [`var(--flux-${a})`, `var(--flux-${b})`] as [string, string])
 export function hash(s: string) {
   let h = 2166136261
   for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619)

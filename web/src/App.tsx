@@ -63,7 +63,7 @@ export default function App() {
             <Button variant="outline" size="sm" className="text-muted-foreground max-sm:size-9 max-sm:p-0" onClick={() => setCmd(true)} aria-label="Rechercher (Ctrl+K)">
               <SearchIcon />
               <span className="max-sm:hidden">Rechercher</span>
-              <kbd className="pointer-events-none ml-2 rounded border bg-muted px-1.5 font-mono text-[10px] max-sm:hidden">Ctrl K</kbd>
+              <kbd className="pointer-events-none ml-2 rounded border bg-muted px-1.5 font-mono text-xs max-sm:hidden">Ctrl K</kbd>
             </Button>
             <Button size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet(fluxVu)} disabled={coupe} aria-label="Nouveau projet">
               <FolderPlusIcon />

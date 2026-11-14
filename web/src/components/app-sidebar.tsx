@@ -38,7 +38,7 @@ export function AppSidebar({ route }: { route: Route }) {
             <SidebarMenuButton size="lg" asChild tooltip="Relais">
               <a href={lien.accueil()} onClick={ferme}>
                 <img src="/relais.svg" alt="" className="size-8 shrink-0" />
-                <span className="font-display text-base font-bold tracking-tight">Relais</span>
+                <span className="text-base font-semibold tracking-titre">Relais</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

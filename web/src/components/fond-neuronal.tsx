@@ -8,9 +8,15 @@ export function FondNeuronal() {
   React.useEffect(() => {
     const cv = ref.current!
     const c = cv.getContext("2d")!
-    const COUL = ["#FF5B1F", "#FFB21F", "#FF2E88", "#C6FF3D"]
+    // Couleurs lues dans les tokens de index.css (--flux-*, --scene-influx), relues quand le thème change.
+    let COUL: string[] = [], INFLUX = "", theme: boolean | null = null
+    const lis = () => {
+      const st = getComputedStyle(document.documentElement)
+      COUL = ["braise", "ambre", "rose", "citron"].map((n) => st.getPropertyValue(`--flux-${n}`).trim())
+      INFLUX = st.getPropertyValue("--scene-influx").trim()
+    }
     const R = 150
-    type N = { x: number; y: number; vx: number; vy: number; r: number; c: string; f: number }
+    type N = { x: number; y: number; vx: number; vy: number; r: number; c: number; f: number }
     let w = 0, h = 0, N: N[] = [], P: { a: number; b: number; t: number; v: number }[] = [], V: number[][] = []
     let raf = 0
 
@@ -23,13 +29,17 @@ export function FondNeuronal() {
       c.setTransform(dpr, 0, 0, dpr, 0, 0)
       N = Array.from({ length: Math.min(55, Math.round((w * h) / 26000)) }, () => ({
         x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
-        r: 1 + Math.random() * 1.3, c: COUL[(Math.random() * COUL.length) | 0], f: 0,
+        r: 1 + Math.random() * 1.3, c: (Math.random() * 4) | 0, f: 0,
       }))
       P = []
     }
     const pioche = <T,>(t: T[]) => t[(Math.random() * t.length) | 0]
     const image = () => {
       const sombre = document.documentElement.classList.contains("dark")
+      if (sombre !== theme) {
+        theme = sombre
+        lis()
+      }
       const fort = sombre ? 1 : 0.55
       c.clearRect(0, 0, w, h)
       V = N.map(() => [])
@@ -47,7 +57,7 @@ export function FondNeuronal() {
           V[i].push(j)
           V[j].push(i)
           c.globalAlpha = (1 - d / R) * (0.12 + Math.max(a.f, b.f) * 0.35) * fort
-          c.strokeStyle = a.c
+          c.strokeStyle = COUL[a.c]
           c.beginPath()
           c.moveTo(a.x, a.y)
           c.lineTo(b.x, b.y)
@@ -67,7 +77,7 @@ export function FondNeuronal() {
           continue
         }
         c.globalAlpha = fort
-        c.fillStyle = sombre ? "#FFF6EC" : a.c
+        c.fillStyle = sombre ? INFLUX : COUL[a.c]
         c.beginPath()
         c.arc(a.x + (b.x - a.x) * p.t, a.y + (b.y - a.y) * p.t, 1.6, 0, 7)
         c.fill()
@@ -75,7 +85,7 @@ export function FondNeuronal() {
       for (const n of N) {
         n.f *= 0.95
         c.globalAlpha = (0.3 + n.f * 0.6) * fort
-        c.fillStyle = n.c
+        c.fillStyle = COUL[n.c]
         c.beginPath()
         c.arc(n.x, n.y, n.r + n.f * 2, 0, 7)
         c.fill()

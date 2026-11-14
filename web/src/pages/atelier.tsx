@@ -310,7 +310,7 @@ function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: bo
     <div className="grid gap-6" style={couleurs(tousFlux, b.id)}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 tabIndex={-1} className="font-display text-2xl font-bold tracking-tight outline-none sm:text-3xl">
+          <h1 tabIndex={-1} className="text-titre outline-none">
             {b.id ? "Modifier le flux" : "Nouveau flux"}
           </h1>
           {aSauver && (
@@ -656,7 +656,7 @@ function SkillLigne({ s, plus, glissable }: { s: Skill; plus: (s: string) => voi
     >
       <div className="grid min-w-0 flex-1">
         <span className="truncate text-sm font-medium">{nomSkill(s.name)}</span>
-        <span className="truncate font-mono text-[11px] text-muted-foreground">{s.name}</span>
+        <span className="truncate font-mono text-xs text-muted-foreground">{s.name}</span>
       </div>
       <Button variant="ghost" size="icon-sm" className="shrink-0 opacity-70 group-hover:opacity-100" aria-label={`Ajouter ${s.name}`} onClick={() => plus(s.name)} onPointerDown={(e) => e.stopPropagation()}>
         <PlusIcon />

@@ -29,7 +29,7 @@ export function Skills() {
     <div className="grid gap-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid gap-1">
-          <h1 tabIndex={-1} className="font-display text-2xl font-bold tracking-tight outline-none sm:text-3xl">
+          <h1 tabIndex={-1} className="text-titre outline-none">
             Skills
           </h1>
           <p className="text-muted-foreground">

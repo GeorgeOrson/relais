@@ -34,9 +34,9 @@ export function Accueil() {
     <div className="grid gap-10">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid gap-2">
-          <h1 tabIndex={-1} className="font-display text-3xl font-bold tracking-tight outline-none sm:text-4xl">
+          <h1 tabIndex={-1} className="text-display outline-none">
             Que veux-tu{" "}
-            <span className="bg-linear-to-r from-[#FF5B1F] via-[#FF2E88] to-[#FFB21F] bg-clip-text text-transparent">créer</span> ?
+            <span className="bg-linear-to-r from-(--flux-braise) via-(--flux-rose) to-(--flux-ambre) bg-clip-text text-transparent">créer</span> ?
           </h1>
           <p className="max-w-xl text-muted-foreground">
             Chaque flux enchaîne les bons skills, étape par étape. Relais lance Claude Code et suit l'avancement de tes projets.

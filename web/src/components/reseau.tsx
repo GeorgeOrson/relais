@@ -81,7 +81,7 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
         {!dessin && <div style={{ height: hauteur }} />}
       </div>
       {legende && (
-        <p className={cn("relative px-3 pb-2.5 text-center font-mono text-xs transition-colors", survol ? "text-white" : "text-white/55")} aria-hidden="true">
+        <p className={cn("relative px-3 pb-2.5 text-center font-mono text-xs transition-colors", survol ? "text-scene-texte" : "text-scene-texte-doux")} aria-hidden="true">
           {survol ?? legende}
         </p>
       )}

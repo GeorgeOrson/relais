@@ -94,7 +94,7 @@ export function ProjetPage({ dossier }: { dossier: string }) {
             <span className="size-2 rounded-full bg-(--c1)" />
             {p.flux.nom}
           </Badge>
-          <h1 tabIndex={-1} className="font-display text-2xl font-bold tracking-tight outline-none sm:text-3xl">
+          <h1 tabIndex={-1} className="text-titre outline-none">
             {p.nom}
           </h1>
           <p className="truncate font-mono text-xs text-muted-foreground" title={p.dossier}>
@@ -237,7 +237,7 @@ function Pastille({ e, i, courante }: { e: Passage; i: number; courante: boolean
         "relative z-10 mt-3 grid size-8 place-items-center rounded-full border bg-background text-xs font-semibold tabular-nums sm:size-10 sm:text-sm",
         fait && "coche border-success/60 bg-success/15 text-success",
         e.statut === "termine" && "border-warning/60 bg-warning/15 text-warning",
-        courante && !fait && "border-(--c1) bg-(--c1) text-[#1a110b] shadow-[0_0_18px_-2px_var(--c1)]"
+        courante && !fait && "border-(--c1) bg-(--c1) text-sur-flux shadow-lueur-flux"
       )}
     >
       {fait ? <CheckIcon className="size-4" /> : e.statut === "saute" ? <SkipForwardIcon className="size-3.5" /> : i + 1}
