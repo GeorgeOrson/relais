@@ -1,0 +1,96 @@
+{
+  "id": "amelioration",
+  "nom": "Amélioration d'un site existant",
+  "description": "Un site déjà codé passe par audits, corrections, refonte et relecture, jusqu'à une version pro.",
+  "ordre": 5,
+  "etapes": [
+    {
+      "id": "cadrage",
+      "titre": "Cadrage",
+      "skills": ["grilling"],
+      "objectif": "Lire le site existant (code et pages), puis questionner : à qui il sert, ce qui gêne aujourd'hui, ce qu'il ne faut surtout pas casser, et jusqu'où aller (retouches ou refonte).",
+      "livrable": "Les objectifs d'amélioration classés, les contraintes, et ce qui est hors périmètre."
+    },
+    {
+      "id": "audit-ux-ui",
+      "titre": "Audit UX/UI",
+      "skills": ["ui-ux-pro-max", "run"],
+      "objectif": "Lancer le site et l'auditer sur ordinateur et sur mobile : parcours, lisibilité, accessibilité, responsive, cohérence visuelle, animations. Ne rien modifier.",
+      "livrable": "La liste des problèmes d'interface, chacun avec sa preuve (page, taille d'écran, capture ou mesure) et sa gravité."
+    },
+    {
+      "id": "audit-code",
+      "titre": "Audit du code",
+      "skills": ["code-review"],
+      "objectif": "Relire tout le code du site pour trouver les bugs, les cas limites mal gérés et les erreurs silencieuses. Ne rien modifier.",
+      "livrable": "La liste des bugs trouvés, classés par gravité, avec fichier et ligne."
+    },
+    {
+      "id": "audit-securite",
+      "titre": "Audit de sécurité",
+      "skills": ["security-review"],
+      "objectif": "Chercher les failles : entrées non validées, données exposées, dépendances à risque, secrets dans le code. Ne rien modifier.",
+      "livrable": "Les failles trouvées, classées par gravité, avec la correction proposée."
+    },
+    {
+      "id": "plan",
+      "titre": "Plan d'amélioration",
+      "skills": ["grilling"],
+      "objectif": "Croiser les trois audits et décider avec moi quoi corriger, dans quel ordre, et ce qu'on laisse de côté. Une question à la fois sur chaque arbitrage.",
+      "livrable": "Le plan validé : la liste ordonnée des corrections et des améliorations, et ce qui est écarté."
+    },
+    {
+      "id": "correctifs",
+      "titre": "Correctifs",
+      "skills": ["ponytail"],
+      "objectif": "Corriger les bugs et les failles retenus dans le plan, chacun par le plus petit changement complet, avec un test quand la logique n'est pas triviale.",
+      "livrable": "Les corrections faites, fichier par fichier, et comment elles ont été vérifiées."
+    },
+    {
+      "id": "design-system",
+      "titre": "Système de design",
+      "skills": ["design-system"],
+      "objectif": "Remettre de l'ordre dans le visuel : tokens de couleur, typographie, espacements et composants, à partir de ce qui existe déjà dans le site.",
+      "livrable": "Les tokens et règles retenus, et où ils sont définis dans le code."
+    },
+    {
+      "id": "refonte",
+      "titre": "Refonte de l'interface",
+      "skills": ["ui-ux-pro-max", "ponytail"],
+      "objectif": "Appliquer les améliorations d'interface du plan avec le système de design : structure, responsive, accessibilité, états vides, chargement et erreurs.",
+      "livrable": "Les écrans modifiés, avant et après, et les choix de design expliqués."
+    },
+    {
+      "id": "textes",
+      "titre": "Textes de l'interface",
+      "skills": ["humanizer:humanizer"],
+      "objectif": "Relire tous les textes visibles (titres, boutons, messages, erreurs) pour qu'ils soient clairs, courts et naturels, sans changer ce qu'ils disent.",
+      "livrable": "Les textes réécrits, avant et après."
+    },
+    {
+      "id": "simplification",
+      "titre": "Simplification",
+      "skills": ["simplify"],
+      "objectif": "Relire le code modifié pendant le flux pour supprimer les doublons, le code mort et la complexité inutile.",
+      "livrable": "Ce qui a été simplifié ou supprimé, et pourquoi."
+    },
+    {
+      "id": "relecture",
+      "titre": "Relecture finale",
+      "skills": ["code-review"],
+      "objectif": "Relire l'ensemble des changements faits depuis le début du flux pour trouver les régressions et les bugs introduits.",
+      "livrable": "Les problèmes trouvés dans les changements, classés par gravité."
+    },
+    {
+      "retour": "refonte",
+      "note": "Corrige ce que la relecture finale a trouvé, puis vérifie que l'interface fonctionne toujours."
+    },
+    {
+      "id": "verification",
+      "titre": "Vérification en conditions réelles",
+      "skills": ["run"],
+      "objectif": "Lancer le site et refaire les parcours principaux sur ordinateur et sur mobile, en comparant avec l'audit UX/UI du début.",
+      "livrable": "Le bilan : ce qui est réglé, ce qui reste, avec captures ou mesures."
+    }
+  ]
+}

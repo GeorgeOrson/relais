@@ -1,0 +1,38 @@
+{
+  "id": "site-web",
+  "nom": "Création de site web",
+  "description": "Du brief à un site codé, beau et relu.",
+  "ordre": 2,
+  "etapes": [
+    {
+      "titre": "Cadrage",
+      "skills": ["grilling"],
+      "objectif": "Questionner le besoin : public, pages, contenu, ton, contraintes techniques.",
+      "livrable": "Le résumé des décisions et le plan du site."
+    },
+    {
+      "titre": "Marque",
+      "skills": ["brand"],
+      "objectif": "Fixer la voix, le message et l'identité visuelle du site.",
+      "livrable": "Le guide de marque."
+    },
+    {
+      "titre": "Système de design",
+      "skills": ["design-system"],
+      "objectif": "Traduire la marque en tokens : couleurs, typographie, espacements, composants.",
+      "livrable": "Les tokens et les spécifications des composants."
+    },
+    {
+      "titre": "Construction",
+      "skills": ["ui-ux-pro-max", "ponytail"],
+      "objectif": "Coder le site avec le système de design, en restant simple.",
+      "livrable": "Le site qui tourne en local et la liste des pages faites."
+    },
+    {
+      "titre": "Relecture",
+      "skills": ["code-review"],
+      "objectif": "Relire le code pour trouver les bugs avant la mise en ligne.",
+      "livrable": "Les problèmes trouvés et ce qui a été corrigé."
+    }
+  ]
+}

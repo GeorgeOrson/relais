@@ -1,0 +1,48 @@
+{
+  "id": "entreprise",
+  "nom": "Création d'entreprise",
+  "description": "De l'idée à un modèle chiffré et une marque.",
+  "ordre": 1,
+  "etapes": [
+    {
+      "titre": "Cadrage",
+      "skills": ["grilling"],
+      "objectif": "Questionner l'idée jusqu'à ce que le client, le problème et l'offre soient clairs.",
+      "livrable": "Le résumé des décisions : client visé, problème, offre, contraintes."
+    },
+    {
+      "titre": "Hypothèses et MVP",
+      "skills": ["lean-startup"],
+      "objectif": "Lister les hypothèses risquées et définir la plus petite expérience qui les teste.",
+      "livrable": "Les hypothèses classées par risque et le périmètre du MVP."
+    },
+    {
+      "titre": "Canvas",
+      "skills": ["startup-canvas"],
+      "objectif": "Poser la stratégie produit et le modèle économique sur un canvas.",
+      "livrable": "Le Startup Canvas complet."
+    },
+    {
+      "titre": "Prix",
+      "skills": ["pricing"],
+      "objectif": "Choisir la métrique de valeur, les paliers et les prix.",
+      "livrable": "La grille tarifaire et son raisonnement."
+    },
+    {
+      "titre": "Modèle financier",
+      "skills": ["startup-financial-modeling"],
+      "objectif": "Projeter revenus, coûts et trésorerie sur trois ans, avec plusieurs scénarios.",
+      "livrable": "Le modèle financier et ses hypothèses."
+    },
+    {
+      "retour": "prix",
+      "note": "Ajuste les prix au vu du modèle financier : marge, point mort, trésorerie."
+    },
+    {
+      "titre": "Marque",
+      "skills": ["brand"],
+      "objectif": "Définir la voix, le message et l'identité visuelle.",
+      "livrable": "Le guide de marque."
+    }
+  ]
+}

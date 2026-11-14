@@ -1,0 +1,62 @@
+{
+  "id": "formation",
+  "nom": "Création de formation",
+  "description": "Du sujet à une formation structurée, rédigée et vendable.",
+  "ordre": 4,
+  "etapes": [
+    {
+      "id": "cadrage",
+      "titre": "Cadrage",
+      "skills": [
+        "grilling"
+      ],
+      "objectif": "Questionner le projet : public, niveau de départ, transformation promise, format.",
+      "livrable": "Le résumé des décisions : pour qui, quel résultat, quel format."
+    },
+    {
+      "id": "plan-pedagogique",
+      "titre": "Plan pédagogique",
+      "skills": [
+        "course-creation"
+      ],
+      "objectif": "Découper la formation en modules et leçons, avec un objectif par leçon.",
+      "livrable": "Le plan complet : modules, leçons, objectifs, exercices."
+    },
+    {
+      "id": "redaction-des-modules",
+      "titre": "Rédaction des modules",
+      "skills": [
+        "course-creation"
+      ],
+      "objectif": "Écrire le contenu de chaque leçon et ses exercices, en suivant la structure de module du skill : objectif, concept, démo, pratique, défi, vérification.",
+      "livrable": "Le contenu rédigé de tous les modules."
+    },
+    {
+      "id": "supports",
+      "titre": "Supports",
+      "skills": [
+        "slides"
+      ],
+      "objectif": "Transformer les modules en présentations.",
+      "livrable": "Les présentations de chaque module."
+    },
+    {
+      "id": "prix",
+      "titre": "Prix",
+      "skills": [
+        "pricing"
+      ],
+      "objectif": "Fixer le prix et les formules de la formation.",
+      "livrable": "La grille tarifaire et son raisonnement."
+    },
+    {
+      "id": "humanise",
+      "titre": "Humanise",
+      "skills": [
+        "humanizer:humanizer"
+      ],
+      "objectif": "",
+      "livrable": ""
+    }
+  ]
+}

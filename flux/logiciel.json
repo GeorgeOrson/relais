@@ -1,0 +1,57 @@
+{
+  "id": "logiciel",
+  "nom": "Création de logiciel",
+  "description": "Du besoin à un logiciel qui marche, relu et sécurisé.",
+  "ordre": 3,
+  "etapes": [
+    {
+      "titre": "Cadrage",
+      "skills": [
+        "grilling"
+      ],
+      "objectif": "Questionner le besoin : utilisateurs, cas d'usage, forme technique, limites.",
+      "livrable": "Le résumé des décisions de conception."
+    },
+    {
+      "titre": "Périmètre du MVP",
+      "skills": [
+        "lean-startup"
+      ],
+      "objectif": "Réduire la première version à ce qui prouve que le logiciel est utile.",
+      "livrable": "Ce qui est dans la v1, ce qui n'y est pas, et pourquoi."
+    },
+    {
+      "titre": "Construction",
+      "skills": [
+        "ponytail"
+      ],
+      "objectif": "Coder le cœur du logiciel avec le moins de code possible.",
+      "livrable": "Le logiciel qui tourne, ses tests, et comment le lancer."
+    },
+    {
+      "titre": "Interface",
+      "skills": [
+        "ui-ux-pro-max",
+        "ponytail"
+      ],
+      "objectif": "Rendre l'interface belle et facile à utiliser.",
+      "livrable": "L'interface terminée et les choix de design."
+    },
+    {
+      "titre": "Relecture",
+      "skills": [
+        "code-review"
+      ],
+      "objectif": "Relire le code pour trouver les bugs.",
+      "livrable": "Les problèmes trouvés et ce qui a été corrigé."
+    },
+    {
+      "titre": "Sécurité",
+      "skills": [
+        "security-review"
+      ],
+      "objectif": "Chercher les failles avant de livrer.",
+      "livrable": "Les failles trouvées et ce qui a été corrigé."
+    }
+  ]
+}
