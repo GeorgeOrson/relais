@@ -150,12 +150,16 @@ const inscrit = (dossier) => registre().find((p) => cle(p) === cle(dossier));
 const etatFile = (dossier) => path.join(dossier, '.relais', 'etat.json');
 
 const connu = (dossier) => inscrit(dossier) || refus('Projet inconnu.');
+// Projet qu'on ne peut pas lire : dossier absent ou etat.json abîmé.
+const perdu = (dossier, abime = false) => ({ dossier, nom: path.basename(dossier), introuvable: true, abime, etapes: [] });
+// Le chemin résolu f reste-t-il sous base ?
+const dans = (base, f) => f.startsWith(base + path.sep);
 
 // Chemin du livrable d'une étape, ou null s'il sort de <dossier>/livrables/ ou ne finit pas par .md (etat.json venu d'ailleurs).
 function livrable(dossier, e) {
   const base = path.join(dossier, 'livrables');
   const f = path.resolve(dossier, String(e.fichier ?? ''));
-  return f.startsWith(base + path.sep) && /\.md$/.test(f) ? f : null;
+  return dans(base, f) && /\.md$/.test(f) ? f : null;
 }
 
 function ecrisFluxMd(dossier, etat) {
@@ -176,12 +180,13 @@ function sauve(dossier, etat) {
 // Lit l'état et le rapproche du disque : un livrable présent signifie que l'étape est terminée.
 function lisProjet(dossier) {
   const etat = readJson(etatFile(dossier), null);
-  if (!etat) return { dossier, nom: path.basename(dossier), introuvable: true, etapes: [] };
+  if (!etat) return perdu(dossier);
   if (!Array.isArray(etat.etapes) || !etat.flux || etat.etapes.some((e) => !e || typeof e.titre !== 'string' || !Array.isArray(e.skills)))
-    return { dossier, nom: path.basename(dossier), introuvable: true, abime: true, etapes: [] };
+    return perdu(dossier, true);
   let change = false;
   for (const e of etat.etapes) {
     const f = livrable(dossier, e);
+    e.invalide = !f; // champ calculé, retiré par sauve
     if (!f) continue; // étape invalide : ni lecture ni changement de statut
     const present = fs.existsSync(f);
     let s = e.statut;
@@ -194,15 +199,18 @@ function lisProjet(dossier) {
   }
   if (change) try { sauve(dossier, etat); } catch (err) { console.error(err); } // dossier en lecture seule : on affiche quand même
   const courante = etat.etapes.findIndex((e) => e.statut !== 'valide' && e.statut !== 'saute');
-  return { ...etat, dossier, courante, etapes: etat.etapes.map((e) => ({ ...e, manque: manque(e), invalide: !livrable(dossier, e) })) };
+  return { ...etat, dossier, courante, etapes: etat.etapes.map((e) => ({ ...e, manque: manque(e) })) };
 }
+
+// Chemin absolu résolu du dossier existant indiqué, ou null.
+const dossierExistant = (existant) => (texte(existant) && path.isAbsolute(texte(existant)) ? path.resolve(texte(existant)) : null);
 
 function creeProjet({ nom, fluxId, parent, existant, auto }) {
   const flux = listeFlux().find((f) => f.id === fluxId) || refus('Flux inconnu.');
   let dossier;
   for (const c of [existant, parent]) if (texte(c) && !path.isAbsolute(texte(c))) refus('Indique un chemin de dossier complet, par exemple C:\\Users\\…');
   if (texte(existant)) {
-    dossier = path.resolve(texte(existant));
+    dossier = dossierExistant(existant);
     if (!fs.existsSync(dossier) || !fs.statSync(dossier).isDirectory()) refus('Ce dossier n’existe pas.');
   } else {
     const net = texte(nom, 80).replace(/[\\/:*?"<>|]/g, '').replace(/[. ]+$/, '');
@@ -309,7 +317,7 @@ function agis({ dossier: demande, i, action }) {
     ecrisConsigne(dossier, contenu);
     for (const x of visees) x.statut = 'en-cours'; // en mode auto, toute la session est en cours
     sauve(dossier, p);
-    return { consigne: contenu };
+    return { consigne: contenu, dossier };
   }
   if (action === 'valider') {
     if (e.statut !== 'termine') refus('Rien à valider : le livrable n’est pas encore écrit.');
@@ -385,7 +393,7 @@ function fichierStatique(urlPath) {
   let rel;
   try { rel = decodeURIComponent(urlPath); } catch { return null; }
   const file = path.resolve(WEB, '.' + (rel === '/' ? '/index.html' : rel));
-  if (file !== WEB && !file.startsWith(WEB + path.sep)) return null;
+  if (file !== WEB && !dans(WEB, file)) return null;
   return fs.existsSync(file) && fs.statSync(file).isFile() ? file : null;
 }
 
@@ -402,9 +410,9 @@ function body(req) {
   });
 }
 
-// Dossier qui a déjà un état Relais : rattaché tel quel. S'il vient d'ailleurs, l'interface montre d'abord ses étapes (S2).
+// Dossier qui a déjà un état Relais : rattaché tel quel. S'il vient d'ailleurs, l'interface montre d'abord ses étapes.
 function projet(b) {
-  const dossier = texte(b.existant) && path.isAbsolute(texte(b.existant)) && path.resolve(texte(b.existant));
+  const dossier = dossierExistant(b.existant);
   const etat = dossier && readJson(etatFile(dossier), null);
   if (!etat) return { dossier: creeProjet(b) };
   const flux = propre(etat.flux?.nom, 80) || 'inconnu';
@@ -417,11 +425,11 @@ const routes = {
   '/api/flux': (b) => ({ flux: enregistreFlux(b) }),
   '/api/flux/supprimer': (b) => (supprimeFlux(b.id), {}),
   '/api/projet': projet,
-  '/api/projet/retirer': (b) => (writeJson(PROJETS, registre().filter((d) => d !== b.dossier)), {}),
+  '/api/projet/retirer': (b) => (writeJson(PROJETS, registre().filter((d) => cle(d) !== cle(b.dossier))), {}),
   '/api/projet/auto': (b) => (regleAuto(b), {}),
   '/api/etape': async (b) => {
-    const r = agis(b);
-    if (b.action === 'lancer') await terminal(connu(b.dossier));
+    const { dossier, ...r } = agis(b); // dossier : renvoyé par « lancer » et « copier », pas transmis à l'interface
+    if (b.action === 'lancer') await terminal(dossier);
     return r;
   },
   '/api/trouver': async (b) => (await trouveSkill(b), {}),
@@ -454,7 +462,7 @@ async function handle(req, res) {
     }
     if (req.method === 'GET' && url.pathname === '/api/data') {
       const projets = registre().map((d) => {
-        try { return lisProjet(d); } catch (err) { console.error(err); return { dossier: d, nom: path.basename(d), introuvable: true, abime: true, etapes: [] }; }
+        try { return lisProjet(d); } catch (err) { console.error(err); return perdu(d, true); }
       });
       return send(res, 200, { skills: skills(), flux: listeFlux(), projets, parent: PARENT });
     }
