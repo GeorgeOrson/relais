@@ -149,7 +149,7 @@ assert.ok(q.confirmer && !q.dossier);
 assert.strictEqual(q.confirmer.etapes[0], 'A # Pirate');
 const ok2 = r.projet({ fluxId: 'site-web', existant: etranger, confirme: true });
 assert.strictEqual(ok2.dossier, etranger);
-assert.match(ok2.info, /flux choisi est ignoré/);
+assert.match(ok2.info, /ignore le flux choisi/);
 assert.strictEqual(r.lisProjet(etranger).flux.id, 'boucle');
 
 // S3 / m8 : caractères de commande et noms réservés de Windows refusés

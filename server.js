@@ -126,7 +126,7 @@ function enregistreFlux(f) {
   if (!nom) refus('Le flux n’a pas de nom.');
   let id = f.id ? String(f.id) : slug(nom) || 'flux';
   if (!f.id && id === 'nouveau') id = 'nouveau-flux'; // « nouveau » est réservé à la création dans l'interface
-  if (!ID.test(id) || id === 'nouveau') refus('Nom de flux invalide.');
+  if (!ID.test(id) || id === 'nouveau') refus('Nom de flux invalide : choisis-en un autre.');
   const file = path.join(FLUX_DIR, id + '.json');
   if (!f.id && fs.existsSync(file)) refus('Un flux porte déjà ce nom.');
   const flux = { id, nom, description: texte(f.description, 300), ordre: readJson(file, {}).ordre, etapes: nettoieEtapes(f.etapes) };
@@ -283,7 +283,7 @@ function ouvreTerminal(dossier) {
 }
 const terminal = (dossier) => ouvreTerminal(dossier).catch((err) => {
   console.error(err);
-  refus('Le terminal n’a pas pu s’ouvrir. La consigne est prête : copie-la et colle-la dans Claude Code.');
+  refus('Le terminal ne s’est pas ouvert. La consigne est prête : copie-la dans Claude Code.');
 });
 
 function ecrisConsigne(dossier, contenu) {
@@ -297,14 +297,14 @@ function agis({ dossier: demande, i, action }) {
   const p = lisProjet(dossier);
   if (p.introuvable) refus('Le dossier du projet est introuvable.');
   const e = p.etapes[i] || refus('Étape inconnue.');
-  if (e.invalide) refus('Le chemin du livrable de cette étape sort du dossier livrables/ : Relais ne la touche pas.');
+  if (e.invalide) refus('Le livrable de cette étape pointe hors du dossier livrables/. Relais ne touche pas à cette étape.');
   if (action === 'lancer' || action === 'copier') {
     if (i !== p.courante) refus('Les étapes se font dans l’ordre : termine ou saute d’abord la précédente.');
     const visees = p.auto ? p.etapes.filter((x, n) => n >= i && x.statut !== 'saute' && x.statut !== 'valide') : [e];
     const bloquee = visees.find((x) => x.manque);
     if (bloquee) refus(`L’étape « ${bloquee.titre} » n’a pas de skill installé. Trouve-lui un skill ou saute-la.`);
     const invalide = visees.find((x) => x.invalide);
-    if (invalide) refus(`Le chemin du livrable de « ${invalide.titre} » sort du dossier livrables/ : Relais ne la lance pas.`);
+    if (invalide) refus(`Le livrable de « ${invalide.titre} » pointe hors du dossier livrables/. Relais ne lance pas cette étape.`);
     const contenu = consigne(p, i);
     ecrisConsigne(dossier, contenu);
     for (const x of visees) x.statut = 'en-cours'; // en mode auto, toute la session est en cours
@@ -315,7 +315,7 @@ function agis({ dossier: demande, i, action }) {
     if (e.statut !== 'termine') refus('Rien à valider : le livrable n’est pas encore écrit.');
     e.statut = 'valide';
   } else if (action === 'sauter') {
-    if (i !== p.courante) refus('On ne peut sauter que l’étape en cours.');
+    if (i !== p.courante) refus('Tu ne peux sauter que l’étape en cours.');
     e.statut = 'saute';
   } else if (action === 'refaire') {
     const file = livrable(dossier, e); // finit par .md : la boucle ci-dessous trouve toujours un nom libre
@@ -356,7 +356,7 @@ function choisitDossier({ depart }) {
     execFile('powershell.exe', ['-NoProfile', '-STA', '-Command', script],
       { env: { ...process.env, RELAIS_DEPART: texte(depart, 500) || PARENT }, windowsHide: true, timeout: 600000 },
       (err, out) => {
-        if (err) return console.error(err), reject(new Refus('Le sélecteur de dossier n’a pas pu s’ouvrir. Tape le chemin à la main.'));
+        if (err) return console.error(err), reject(new Refus('Le sélecteur de dossier ne s’est pas ouvert. Tape le chemin à la main.'));
         const dossier = String(out || '').trim();
         resolve(dossier ? { dossier } : { annule: true });
       });
@@ -410,7 +410,7 @@ function projet(b) {
   const flux = propre(etat.flux?.nom, 80) || 'inconnu';
   if (!inscrit(dossier) && !b.confirme)
     return { confirmer: { flux, etapes: (Array.isArray(etat.etapes) ? etat.etapes : []).slice(0, 50).map((e) => propre(e?.titre, 80) || '(sans titre)') } };
-  return { dossier: creeProjet(b), info: `Ce dossier suit déjà le flux « ${flux} » : son état est gardé et le flux choisi est ignoré.` };
+  return { dossier: creeProjet(b), info: `Ce dossier suit déjà le flux « ${flux} ». Relais garde son avancement et ignore le flux choisi.` };
 }
 
 const routes = {
@@ -461,7 +461,7 @@ async function handle(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/livrable') {
       const p = lisProjet(connu(url.searchParams.get('d')));
       const e = p.etapes[Number(url.searchParams.get('i'))] || refus('Étape inconnue.');
-      const f = livrable(p.dossier, e) || refus('Le chemin de ce livrable sort du dossier livrables/ : Relais ne le lit pas.');
+      const f = livrable(p.dossier, e) || refus('Ce livrable pointe hors du dossier livrables/. Relais ne le lit pas.');
       if (!fs.existsSync(f)) refus(`Le livrable ${e.fichier} n’existe plus.`);
       return send(res, 200, { texte: fs.readFileSync(f, 'utf8').replace(/^﻿/, '') });
     }
