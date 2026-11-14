@@ -56,12 +56,17 @@ export function ProjetPage({ dossier }: { dossier: string }) {
       return
     setOccupe(`${i}${action}`)
     try {
-      const r = await api<{ consigne?: string }>("/api/etape", { dossier, i, action })
+      const r = await api<{ consigne?: string; terminal?: false }>("/api/etape", { dossier, i, action })
       if (action === "copier" && r.consigne) {
         await navigator.clipboard.writeText(r.consigne)
         toast.success("Consigne copiée", { description: "Colle-la dans Claude Code, ouvert dans le dossier du projet." })
       }
-      if (action === "lancer") toast.success("Claude Code s'ouvre dans un terminal", { description: "L'étape passera à « À valider » dès que son livrable sera écrit." })
+      if (action === "lancer" && r.terminal === false) {
+        const copie = !!r.consigne && (await navigator.clipboard.writeText(r.consigne).then(() => true, () => false))
+        toast.warning("Le terminal ne s'est pas ouvert", {
+          description: copie ? "La consigne est copiée : colle-la dans Claude Code, ouvert dans le dossier du projet." : "Clique sur « Copier la consigne », puis colle-la dans Claude Code.",
+        })
+      } else if (action === "lancer") toast.success("Claude Code s'ouvre dans un terminal", { description: "L'étape passera à « À valider » dès que son livrable sera écrit." })
       if (action === "valider") toast.success(`« ${e.titre} » validée`)
       await rafraichir()
     } catch (err) {
@@ -170,11 +175,11 @@ export function ProjetPage({ dossier }: { dossier: string }) {
                     <dl className="grid gap-3 text-sm sm:grid-cols-2">
                       <div>
                         <dt className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">Objectif</dt>
-                        <dd>{e.objectif || "—"}</dd>
+                        <dd className="whitespace-pre-line">{e.objectif || "—"}</dd>
                       </div>
                       <div>
                         <dt className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">Livrable</dt>
-                        <dd>{e.livrable || "—"}</dd>
+                        <dd className="whitespace-pre-line">{e.livrable || "—"}</dd>
                       </div>
                     </dl>
                     <Actions e={e} i={i} p={p} occupe={occupe} agis={agis} trouver={trouver} />
@@ -271,7 +276,13 @@ function Actions(props: {
     </Button>
   )
   const liste: React.ReactNode[] = []
-  if (e.invalide) return <p className="text-sm text-destructive">Le livrable de cette étape pointe hors du dossier livrables/. Relais ne touche pas à cette étape.</p>
+  if (e.invalide)
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="text-sm text-destructive">Le livrable de cette étape pointe hors du dossier livrables/. Relais peut seulement la sauter.</p>
+        {courante && b("sauter", SkipForwardIcon, "Sauter")}
+      </div>
+    )
   if (e.statut === "termine") liste.push(b("valider", CheckIcon, "Valider", "default"), b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "valide") liste.push(b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "saute") liste.push(b("refaire", RotateCcwIcon, "Reprendre", "ghost"))

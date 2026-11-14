@@ -35,15 +35,44 @@ export const setGarde = (g: typeof garde) => {
   garde = g
 }
 
+// Chaque entrée d'historique porte son rang (history.state.i) : « Précédent » ou « Suivant » refusé par la garde
+// peut ainsi être annulé par history.go(), sans perdre d'entrée.
+const rang = () => (typeof history.state?.i === "number" ? (history.state.i as number) : null)
+let actuel = location.hash // dernière ancre acceptée
+let idx = rang() ?? 0 // et son rang
+if (rang() === null) history.replaceState({ i: idx }, "")
+let accepte = false // le prochain changement d'ancre est déjà passé par la garde (va, ou retour confirmé)
+
 export const va = async (href: string) => {
   if (garde && !(await garde())) return
+  if (location.hash !== href) accepte = true
   location.hash = href.slice(1)
 }
 
 export function useRoute() {
   const [route, setRoute] = React.useState(() => lisRoute())
   React.useEffect(() => {
-    const maj = () => setRoute(lisRoute())
+    const maj = async () => {
+      if (location.hash === actuel) return // retour sur place après un refus
+      // « Précédent » / « Suivant » du navigateur, ou ancre tapée : on revient sur place le temps de demander à la garde.
+      if (garde && !accepte) {
+        const voulu = location.hash
+        const ecart = rang() === null ? null : rang()! - idx // null : nouvelle entrée (ancre tapée)
+        if (ecart) history.go(-ecart)
+        else history.back()
+        if (await garde()) {
+          accepte = true
+          if (ecart) history.go(ecart)
+          else location.hash = voulu
+        }
+        return
+      }
+      accepte = false
+      actuel = location.hash
+      idx = rang() ?? idx + 1 // nouvelle entrée : rang suivant
+      history.replaceState({ i: idx }, "")
+      setRoute(lisRoute())
+    }
     // les liens internes passent aussi par la garde
     const clic = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.('a[href^="#/"]')
