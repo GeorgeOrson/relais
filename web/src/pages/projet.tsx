@@ -35,7 +35,8 @@ export function ProjetPage({ dossier }: { dossier: string }) {
           Projet introuvable
         </h1>
         <p className="text-muted-foreground">
-          Ce projet n'est plus dans la liste ou son dossier a disparu. <a className="underline" href={lien.accueil()}>Retour à l'accueil</a>
+          {p?.abime ? "Le fichier .relais/etat.json de ce projet est illisible." : "Ce projet n'est plus dans la liste ou son dossier a disparu."}{" "}
+          <a className="underline" href={lien.accueil()}>Retour à l'accueil</a>
         </p>
       </div>
     )
@@ -43,8 +44,13 @@ export function ProjetPage({ dossier }: { dossier: string }) {
   const agis = async (i: number, action: string) => {
     const e = p.etapes[i]
     if (action === "voir") {
-      const r = await api<{ texte: string }>(`/api/livrable?d=${encodeURIComponent(dossier)}&i=${i}`)
-      return setLivrable({ titre: e.titre, texte: r.texte })
+      try {
+        const r = await api<{ texte: string }>(`/api/livrable?d=${encodeURIComponent(dossier)}&i=${i}`)
+        setLivrable({ titre: e.titre, texte: r.texte })
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+      return
     }
     if (action === "refaire" && !(await confirmer({ titre: `Refaire « ${e.titre} » ?`, texte: "Le livrable actuel est conservé avec un suffixe, et l'étape repasse à faire.", action: "Refaire" })))
       return
@@ -66,8 +72,12 @@ export function ProjetPage({ dossier }: { dossier: string }) {
   }
 
   const trouver = async (e: Passage) => {
-    await api("/api/trouver", e).catch((err) => toast.error(err.message))
-    toast("Claude Code s'ouvre pour chercher un skill", { description: "Ajoute-le ensuite à l'étape dans l'éditeur du flux." })
+    try {
+      await api("/api/trouver", e)
+      toast("Claude Code s'ouvre pour chercher un skill", { description: "Ajoute-le ensuite à l'étape dans l'éditeur du flux." })
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
   }
 
   const montre = (i: number) => {
@@ -268,6 +278,7 @@ function Actions(props: {
     </Button>
   )
   const liste: React.ReactNode[] = []
+  if (e.invalide) return <p className="text-sm text-destructive">Le chemin du livrable de cette étape sort du dossier livrables/ : Relais ne la touche pas.</p>
   if (e.statut === "termine") liste.push(b("valider", CheckIcon, "Valider", "default"), b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "valide") liste.push(b("voir", EyeIcon, "Voir le livrable"), b("refaire", RotateCcwIcon, "Refaire", "ghost"))
   else if (e.statut === "saute") liste.push(b("refaire", RotateCcwIcon, "Reprendre", "ghost"))
@@ -279,7 +290,11 @@ function Actions(props: {
           Trouver un skill
         </Button>
       )
-    else liste.push(b("lancer", PlayIcon, e.statut === "en-cours" ? "Rouvrir dans Claude Code" : p.auto ? "Lancer tout le flux" : "Lancer dans Claude Code", "default"), b("copier", CopyIcon, "Copier la consigne"))
+    else {
+      // en mode auto, une session lancée enchaîne déjà les étapes : pas de second lancement
+      if (p.auto && e.statut === "en-cours") liste.push(<span key="session" className="self-center text-sm text-muted-foreground">Session en cours</span>)
+      liste.push(b("lancer", PlayIcon, e.statut === "en-cours" ? "Rouvrir dans Claude Code" : p.auto ? "Lancer tout le flux" : "Lancer dans Claude Code", "default"), b("copier", CopyIcon, "Copier la consigne"))
+    }
     liste.push(b("sauter", SkipForwardIcon, "Sauter", "ghost"))
   } else return <p className="text-sm text-muted-foreground">Cette étape se lancera quand les précédentes seront faites.</p>
   return <div className="flex flex-wrap gap-2">{liste}</div>

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { FolderPlusIcon, RefreshCwIcon, SearchIcon, ServerOffIcon } from "lucide-react"
+import { FolderPlusIcon, RefreshCwIcon, SearchIcon, ServerOffIcon, TriangleAlertIcon } from "lucide-react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { CommandMenu } from "@/components/command-menu"
@@ -11,8 +11,9 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { useCalme } from "@/hooks/use-calme"
 import { useRelais } from "@/hooks/use-relais"
-import { useRoute, type Route } from "@/hooks/use-route"
+import { lien, useRoute, va, type Route } from "@/hooks/use-route"
 import { Accueil } from "@/pages/accueil"
 import { Atelier } from "@/pages/atelier"
 import { ProjetPage } from "@/pages/projet"
@@ -28,7 +29,10 @@ export default function App() {
   const route = useRoute()
   const { data, erreur, rafraichir, reglages, nouveauProjet } = useRelais()
   const [cmd, setCmd] = React.useState(false)
-  const calme = React.useMemo(() => matchMedia("(prefers-reduced-motion: reduce)").matches, [])
+  const calme = useCalme()
+  const coupe = !!erreur && !!data // serveur arrêté après le premier chargement
+  // la boîte « Nouveau projet » présélectionne le flux qu'on regarde
+  const fluxVu = route.vue === "flux" ? route.id : route.vue === "projet" ? data?.projets.find((p) => p.dossier === route.dossier)?.flux?.id : undefined
 
   const titre = titreDe(route, (r) =>
     r.vue === "projet" ? data?.projets.find((p) => p.dossier === r.dossier)?.nom : r.vue === "flux" ? data?.flux.find((f) => f.id === r.id)?.nom : undefined
@@ -61,22 +65,37 @@ export default function App() {
               <span className="max-sm:hidden">Rechercher</span>
               <kbd className="pointer-events-none ml-2 rounded border bg-muted px-1.5 font-mono text-[10px] max-sm:hidden">Ctrl K</kbd>
             </Button>
-            <Button size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet()} aria-label="Nouveau projet">
+            <Button size="sm" className="max-sm:size-9 max-sm:p-0" onClick={() => nouveauProjet(fluxVu)} disabled={coupe} aria-label="Nouveau projet">
               <FolderPlusIcon />
               <span className="max-sm:hidden">Nouveau projet</span>
             </Button>
           </header>
-          <main id="contenu" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {coupe && (
+            <div role="alert" className="sticky top-14 z-20 flex items-center gap-2 border-b border-destructive/40 bg-destructive/15 px-4 py-2 text-sm backdrop-blur-md">
+              <ServerOffIcon className="size-4 shrink-0" />
+              <span>
+                Le serveur Relais ne répond plus. Relance <code className="font-mono">Relais.bat</code>.
+              </span>
+            </div>
+          )}
+          <main id="contenu" className="@container mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             {erreur && !data ? (
               <ServeurArrete erreur={erreur} reessayer={rafraichir} />
-            ) : route.vue === "projet" ? (
-              <ProjetPage key={route.dossier} dossier={route.dossier} />
-            ) : route.vue === "flux" ? (
-              <Atelier key={route.id} id={route.id} />
-            ) : route.vue === "skills" ? (
-              <Skills />
             ) : (
-              <Accueil />
+              // pendant une coupure, les boutons de la vue sont désactivés
+              <fieldset disabled={coupe} className="contents">
+                <Garde key={JSON.stringify(route)}>
+                  {route.vue === "projet" ? (
+                    <ProjetPage key={route.dossier} dossier={route.dossier} />
+                  ) : route.vue === "flux" ? (
+                    <Atelier key={route.id} id={route.id} />
+                  ) : route.vue === "skills" ? (
+                    <Skills />
+                  ) : (
+                    <Accueil />
+                  )}
+                </Garde>
+              </fieldset>
             )}
           </main>
         </SidebarInset>
@@ -86,6 +105,45 @@ export default function App() {
       <Toaster position="bottom-right" richColors closeButton />
     </TooltipProvider>
   )
+}
+
+// Une erreur dans une vue n'emporte pas toute l'application : la barre latérale reste utilisable.
+class Garde extends React.Component<{ children: React.ReactNode }, { erreur: Error | null }> {
+  state = { erreur: null as Error | null }
+  static getDerivedStateFromError(erreur: Error) {
+    return { erreur }
+  }
+  componentDidCatch(erreur: Error) {
+    console.error(erreur)
+  }
+  render() {
+    const { erreur } = this.state
+    if (!erreur) return this.props.children
+    return (
+      <Card className="mx-auto mt-10 max-w-md">
+        <CardHeader>
+          <TriangleAlertIcon className="mb-2 size-8 text-destructive" />
+          <CardTitle>
+            <h1 tabIndex={-1} className="outline-none">
+              Cet écran a rencontré une erreur
+            </h1>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-words text-muted-foreground">{erreur.message}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => location.reload()}>
+              <RefreshCwIcon />
+              Recharger
+            </Button>
+            <Button variant="outline" onClick={() => (this.setState({ erreur: null }), va(lien.accueil()))}>
+              Retour à l'accueil
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 }
 
 function ServeurArrete({ erreur, reessayer }: { erreur: string; reessayer: () => void }) {

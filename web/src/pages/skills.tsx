@@ -33,7 +33,7 @@ export function Skills() {
             Skills
           </h1>
           <p className="text-muted-foreground">
-            {data.skills.length} skills installés, {data.skills.length - masques.size} visibles dans l'atelier.
+            {data.skills.length} skills installés, {data.skills.filter((s) => !masques.has(s.name)).length} visibles dans l'atelier.
           </p>
         </div>
         <div className="relative sm:w-72">

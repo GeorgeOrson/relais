@@ -32,20 +32,29 @@ export function RelaisProvider({ children }: { children: React.ReactNode }) {
   const [erreur, setErreur] = React.useState<string | null>(null)
   const [reglages, setReglages] = React.useState<Reglages>(lisReglages)
   const ouvreur = React.useRef<(fluxId?: string) => void>(() => {})
+  const appels = React.useRef({ dernier: 0, enCours: 0 })
 
+  // Seule la réponse au dernier appel lancé compte : une réponse lente ne remplace pas une plus récente.
   const rafraichir = React.useCallback(async () => {
+    const n = ++appels.current.dernier
+    appels.current.enCours++
     try {
-      setData(await api<Data>("/api/data"))
-      setErreur(null)
+      const d = await api<Data>("/api/data")
+      if (n === appels.current.dernier) {
+        setData(d)
+        setErreur(null)
+      }
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : String(e))
+      if (n === appels.current.dernier) setErreur(e instanceof Error ? e.message : String(e))
+    } finally {
+      appels.current.enCours--
     }
   }, [])
 
   React.useEffect(() => {
     rafraichir()
     const t = setInterval(() => {
-      if (!document.hidden) rafraichir()
+      if (!document.hidden && !appels.current.enCours) rafraichir()
     }, 4000)
     const vu = () => {
       if (!document.hidden) rafraichir()

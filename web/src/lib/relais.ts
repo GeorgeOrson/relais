@@ -9,11 +9,12 @@ export type Retour = { retour: string; note?: string }
 export type Item = Etape | Retour
 export type Flux = { id: string; nom: string; description: string; ordre?: number; etapes: Item[] }
 export type Statut = "a-faire" | "en-cours" | "termine" | "valide" | "saute"
-export type Passage = Etape & { ref?: string; retour?: boolean; fichier: string; statut: Statut; manque: boolean }
+export type Passage = Etape & { ref?: string; retour?: boolean; fichier: string; statut: Statut; manque: boolean; invalide?: boolean }
 export type Projet = {
   dossier: string
   nom: string
   introuvable?: boolean
+  abime?: boolean // etat.json illisible
   flux: { id: string; nom: string }
   auto: boolean
   courante: number

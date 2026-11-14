@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { useCalme } from "@/hooks/use-calme"
 import { hash, type Noeud } from "@/lib/relais"
 import { cn } from "@/lib/utils"
 
@@ -17,8 +18,6 @@ type Props = {
   className?: string
 }
 
-const calme = () => matchMedia("(prefers-reduced-motion: reduce)").matches
-
 function alea(a: number) {
   return () => {
     a = (a + 0x6d2b79f5) | 0
@@ -32,6 +31,7 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
   const boite = React.useRef<HTMLDivElement>(null)
   const [W, setW] = React.useState(0)
   const [survol, setSurvol] = React.useState<string | null>(null)
+  const calme = useCalme()
 
   React.useEffect(() => {
     const el = boite.current
@@ -41,9 +41,9 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
     return () => ro.disconnect()
   }, [])
 
-  const cle = JSON.stringify(noeuds) + W + hauteur + courante + !!projet
+  const cle = JSON.stringify(noeuds) + W + hauteur + courante + !!projet + calme
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const dessin = React.useMemo(() => (W ? dessine(noeuds, W, hauteur, { projet, courante, clic: !!onNoeud }) : null), [cle])
+  const dessin = React.useMemo(() => (W ? dessine(noeuds, W, hauteur, { projet, courante, clic: !!onNoeud, calme }) : null), [cle])
 
   return (
     <div className={cn("scene", className)}>
@@ -89,7 +89,7 @@ export function Reseau({ noeuds, hauteur = 190, projet, courante, legende, onNoe
   )
 }
 
-function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; courante?: number; clic: boolean }) {
+function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; courante?: number; clic: boolean; calme: boolean }) {
   const refs = [...new Set(seq.map((e) => e.ref))]
   const idx = new Map(refs.map((r, i) => [r, i]))
   const chemin = seq.map((e) => idx.get(e.ref)!)
@@ -106,7 +106,7 @@ function dessine(seq: Noeud[], W: number, H: number, o: { projet?: boolean; cour
   const u = 1 / (S + 1)
   const T = (0.6 * (S + 1)).toFixed(2) + "s"
   const jusqu = o.courante === undefined || o.courante < 0 ? S - 1 : o.courante
-  const sansAnim = calme()
+  const sansAnim = o.calme
   const borne = (y: number) => Math.min(H - bas - 12, Math.max(haut + 4, y))
   const f = (v: number) => v.toFixed(1)
   const s3 = (v: number) => v.toFixed(3)

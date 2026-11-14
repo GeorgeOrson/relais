@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
 import { lien, va } from "@/hooks/use-route"
 import { api } from "@/lib/api"
@@ -24,10 +25,11 @@ export function NouveauProjet() {
   const [manuel, setManuel] = React.useState(true)
   const [erreurs, setErreurs] = React.useState<{ nom?: string; dossier?: string; autre?: string }>({})
   const [occupe, setOccupe] = React.useState<"" | "dossier" | "envoi">("")
+  const [confirmer, boite] = useConfirm()
 
   React.useEffect(() => {
     setNouveauProjet((id) => {
-      setFluxId(id || data?.flux[0]?.id || "")
+      setFluxId(id && data?.flux.some((f) => f.id === id) ? id : data?.flux[0]?.id || "")
       setNom("")
       setExistant(false)
       setDossier(data?.parent || "")
@@ -40,7 +42,7 @@ export function NouveauProjet() {
   const parcourir = async () => {
     setOccupe("dossier")
     try {
-      const r = await api<{ dossier?: string }>("/api/dossier", { depart: dossier })
+      const r = await api<{ dossier?: string }>("/api/dossier", { depart: dossier || data?.parent })
       if (r.dossier) {
         setDossier(r.dossier)
         setErreurs((e) => ({ ...e, dossier: undefined }))
@@ -58,25 +60,35 @@ export function NouveauProjet() {
     if (!dossier.trim()) return setErreurs({ dossier: "Choisis un dossier." })
     setOccupe("envoi")
     try {
-      const r = await api<{ dossier: string }>("/api/projet", {
-        fluxId,
-        nom,
-        parent: existant ? "" : dossier,
-        existant: existant ? dossier : "",
-        auto: !manuel,
-      })
+      type Reponse = { dossier?: string; info?: string; confirmer?: { flux: string; etapes: string[] } }
+      const corps = { fluxId, nom: existant ? "" : nom, parent: existant ? "" : dossier, existant: existant ? dossier : "", auto: !manuel }
+      let r = await api<Reponse>("/api/projet", corps)
+      // dossier venu d'ailleurs qui a déjà un état Relais : ses étapes deviendront des consignes pour Claude Code
+      if (r.confirmer) {
+        const ok = await confirmer({
+          titre: "Rattacher ce dossier ?",
+          texte: `Il suit déjà le flux « ${r.confirmer.flux} », qui ne vient pas de ce Relais. Ses étapes seront envoyées à Claude Code comme consignes : ${r.confirmer.etapes.join(" · ")}. Le flux choisi ici sera ignoré.`,
+          action: "Rattacher",
+        })
+        if (!ok) return
+        r = await api<Reponse>("/api/projet", { ...corps, confirme: true })
+      }
       await rafraichir()
       setOpen(false)
-      va(lien.projet(r.dossier))
+      if (r.info) toast(r.info)
+      va(lien.projet(r.dossier!))
     } catch (e) {
       const m = (e as Error).message
-      setErreurs(/dossier|FLUX/i.test(m) ? { dossier: m } : { autre: m })
+      setErreurs(!existant && /\bnom\b/i.test(m) ? { nom: m } : /dossier|chemin/i.test(m) ? { dossier: m } : { autre: m })
     } finally {
       setOccupe("")
     }
   }
 
-  const cible = existant ? dossier : dossier && nom.trim() ? `${dossier.replace(/[\\/]+$/, "")}\\${nom.trim()}` : ""
+  // même nettoyage que le serveur, pour montrer le dossier réellement créé
+  const net = nom.trim().replace(/[\\/:*?"<>|]/g, "").replace(/[. ]+$/, "")
+  const cible = existant ? dossier : dossier && net ? `${dossier.replace(/[\\/]+$/, "")}\\${net}` : ""
+  const aide = erreurs.dossier ?? (occupe === "dossier" ? "Une fenêtre de sélection s'est ouverte sur ton bureau." : cible && `Projet : ${cible}`)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -109,7 +121,15 @@ export function NouveauProjet() {
               <Label htmlFor="np-existant">Utiliser un dossier existant</Label>
               <p className="text-xs text-muted-foreground">Sinon, un nouveau dossier est créé.</p>
             </div>
-            <Switch id="np-existant" checked={existant} onCheckedChange={setExistant} />
+            <Switch
+              id="np-existant"
+              checked={existant}
+              onCheckedChange={(v) => {
+                setExistant(v)
+                setDossier(v ? "" : data?.parent || "") // ne jamais proposer le dossier parent comme dossier de projet
+                setErreurs({})
+              }}
+            />
           </div>
 
           {!existant && (
@@ -149,9 +169,11 @@ export function NouveauProjet() {
                 Parcourir
               </Button>
             </div>
-            <p id="np-dossier-aide" className={erreurs.dossier ? "text-sm text-destructive" : "truncate text-xs text-muted-foreground"}>
-              {erreurs.dossier ?? (occupe === "dossier" ? "Une fenêtre de sélection s'est ouverte sur ton bureau." : cible ? `Projet : ${cible}` : " ")}
-            </p>
+            {aide && (
+              <p id="np-dossier-aide" className={erreurs.dossier ? "text-sm text-destructive" : "truncate text-xs text-muted-foreground"}>
+                {aide}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
@@ -175,6 +197,7 @@ export function NouveauProjet() {
           </DialogFooter>
         </form>
       </DialogContent>
+      {boite}
     </Dialog>
   )
 }

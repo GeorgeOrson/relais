@@ -1,4 +1,5 @@
-import { ArrowRightIcon, FolderPlusIcon, PencilIcon, PlayIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
+import { ArrowRightIcon, FolderPlusIcon, PencilIcon, PlayIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { Reseau } from "@/components/reseau"
 import { Badge } from "@/components/ui/badge"
@@ -6,14 +7,28 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
 import { lien } from "@/hooks/use-route"
+import { api } from "@/lib/api"
 import { couleurs, derouleFlux, estRetour, faits, noeudsProjet, resume } from "@/lib/relais"
 
 // Accueil : d'abord reprendre ce qui est en cours, ensuite démarrer autre chose.
 export function Accueil() {
-  const { data, nouveauProjet } = useRelais()
+  const { data, nouveauProjet, rafraichir } = useRelais()
+  const [confirmer, boite] = useConfirm()
   const projets = data?.projets ?? []
+
+  // Retire seulement l'entrée de projets.json : les fichiers du dossier ne sont pas touchés.
+  const retirer = async (dossier: string, nom: string) => {
+    if (!(await confirmer({ titre: `Retirer « ${nom} » de la liste ?`, texte: "Relais oublie ce projet. Aucun fichier n'est supprimé.", action: "Retirer" }))) return
+    try {
+      await api("/api/projet/retirer", { dossier })
+      await rafraichir()
+    } catch (e) {
+      toast.error((e as Error).message)
+    }
+  }
 
   return (
     <div className="grid gap-10">
@@ -38,19 +53,27 @@ export function Accueil() {
           Reprendre
         </h2>
         {!data ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             <Skeleton className="h-64" />
-            <Skeleton className="h-64 max-md:hidden" />
+            <Skeleton className="h-64 @max-xl:hidden" />
           </div>
         ) : projets.length ? (
-          <div className="apparait grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="apparait grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             {projets.map((p) =>
               p.introuvable ? (
                 <Card key={p.dossier}>
                   <CardHeader>
                     <CardTitle>{p.nom}</CardTitle>
-                    <CardDescription className="break-all">Dossier introuvable : {p.dossier}</CardDescription>
+                    <CardDescription className="break-all">
+                      {p.abime ? "État illisible" : "Dossier introuvable"} : {p.dossier}
+                    </CardDescription>
                   </CardHeader>
+                  <CardFooter className="mt-auto">
+                    <Button variant="outline" onClick={() => retirer(p.dossier, p.nom)}>
+                      <XIcon />
+                      Retirer de la liste
+                    </Button>
+                  </CardFooter>
                 </Card>
               ) : (
                 <Card key={p.dossier} style={couleurs(data.flux, p.flux.id)} className="group transition-shadow hover:shadow-lg">
@@ -116,13 +139,13 @@ export function Accueil() {
           </Button>
         </div>
         {!data ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-72" />
             ))}
           </div>
         ) : (
-          <div className="apparait grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="apparait grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             {data.flux.map((f) => {
               const retours = f.etapes.filter(estRetour).length
               return (
@@ -168,6 +191,7 @@ export function Accueil() {
           </div>
         )}
       </section>
+      {boite}
     </div>
   )
 }

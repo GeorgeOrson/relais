@@ -47,7 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useRelais } from "@/hooks/use-relais"
-import { lien, va } from "@/hooks/use-route"
+import { lien, setGarde, va } from "@/hooks/use-route"
 import { api } from "@/lib/api"
 import { couleurs, deroule, estRetour, nomSkill, resume, slug, SOURCES, type Flux, type Item, type Skill } from "@/lib/relais"
 import { cn } from "@/lib/utils"
@@ -83,29 +83,40 @@ const retourOk = (items: ElemB[], i: number) => {
 const versItems = (b: Brouillon): Item[] =>
   b.items.map((e) => (e.type === "retour" ? { retour: e.vers ?? "", note: e.note } : { id: e.k, titre: e.titre, skills: e.skills, objectif: e.objectif, livrable: e.livrable }))
 
+// Trois colonnes quand la zone principale (sans la barre latérale) fait au moins 64rem, comme @5xl.
+const LARGE = 1024
+function largeur() {
+  const el = document.getElementById("contenu")
+  if (!el) return 0
+  const s = getComputedStyle(el)
+  return el.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight)
+}
 function useLarge() {
-  const [large, setLarge] = React.useState(() => matchMedia("(min-width: 1024px)").matches)
+  const [large, setLarge] = React.useState(() => largeur() >= LARGE)
   React.useEffect(() => {
-    const mq = matchMedia("(min-width: 1024px)")
-    const maj = () => setLarge(mq.matches)
-    mq.addEventListener("change", maj)
-    return () => mq.removeEventListener("change", maj)
+    const el = document.getElementById("contenu")
+    if (!el) return
+    const ro = new ResizeObserver(() => setLarge(largeur() >= LARGE))
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
   return large
 }
 
 export function Atelier({ id }: { id: string }) {
   const { data } = useRelais()
+  const [ouvert, setOuvert] = React.useState(false) // l'éditeur a été affiché : il reste ouvert même si le flux disparaît
+  const flux = data?.flux.find((f) => f.id === id)
+  if (flux && !ouvert) setOuvert(true)
   if (!data)
     return (
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr_320px]">
-        <Skeleton className="h-96 max-lg:hidden" />
+      <div className="grid gap-4 @5xl:grid-cols-[260px_1fr_320px]">
+        <Skeleton className="h-96 @max-5xl:hidden" />
         <Skeleton className="h-96" />
-        <Skeleton className="h-96 max-lg:hidden" />
+        <Skeleton className="h-96 @max-5xl:hidden" />
       </div>
     )
-  const flux = data.flux.find((f) => f.id === id)
-  if (id !== "nouveau" && !flux)
+  if (id !== "nouveau" && !flux && !ouvert)
     return (
       <div className="grid gap-2">
         <h1 tabIndex={-1} className="text-2xl font-semibold outline-none">
@@ -116,10 +127,10 @@ export function Atelier({ id }: { id: string }) {
         </a>
       </div>
     )
-  return <Editeur flux={flux} tousFlux={data.flux} skills={data.skills} />
+  return <Editeur flux={flux} disparu={id !== "nouveau" && !flux} tousFlux={data.flux} skills={data.skills} />
 }
 
-function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; skills: Skill[] }) {
+function Editeur({ flux, disparu, tousFlux, skills }: { flux?: Flux; disparu: boolean; tousFlux: Flux[]; skills: Skill[] }) {
   const { rafraichir, reglages } = useRelais()
   const [b, setB] = React.useState<Brouillon>(() => versBrouillon(flux))
   const [initial, setInitial] = React.useState(() => JSON.stringify(versItems(b)) + b.nom + b.description)
@@ -130,6 +141,28 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
   const [confirmer, boite] = useConfirm()
   const large = useLarge()
   const modifie = JSON.stringify(versItems(b)) + b.nom + b.description !== initial
+  const aSauver = modifie || disparu
+
+  // Brouillon non enregistré : confirmation avant toute navigation interne, et avant de fermer l'onglet.
+  const aSauverRef = React.useRef(aSauver)
+  React.useEffect(() => {
+    aSauverRef.current = aSauver
+  })
+  React.useEffect(() => {
+    setGarde(() =>
+      aSauverRef.current
+        ? confirmer({ titre: "Quitter sans enregistrer ?", texte: "Les changements apportés à ce flux seront perdus.", action: "Quitter", danger: true })
+        : Promise.resolve(true)
+    )
+    const avant = (e: BeforeUnloadEvent) => {
+      if (aSauverRef.current) e.preventDefault()
+    }
+    addEventListener("beforeunload", avant)
+    return () => {
+      setGarde(null)
+      removeEventListener("beforeunload", avant)
+    }
+  }, [confirmer])
 
   const items = b.items
   const choisi = items.find((x) => x.k === sel) ?? null
@@ -196,6 +229,7 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
       toast.success("Flux enregistré")
       setB((v) => ({ ...v, id: r.flux.id, items: v.items.map((x) => (x.type === "etape" ? { ...x, id: idDe.get(x.k) } : x)) }))
       setInitial(JSON.stringify(versItems(b)) + b.nom + b.description)
+      aSauverRef.current = false
       if (!b.id) va(lien.flux(r.flux.id))
     } catch (e) {
       toast.error("Enregistrement refusé", { description: (e as Error).message })
@@ -207,10 +241,15 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
   const supprimeFlux = async () => {
     if (!(await confirmer({ titre: `Supprimer « ${b.nom} » ?`, texte: "Le modèle de flux est supprimé. Les projets déjà lancés gardent leur propre copie des étapes.", action: "Supprimer", danger: true })))
       return
-    await api("/api/flux/supprimer", { id: b.id })
-    await rafraichir()
+    try {
+      await api("/api/flux/supprimer", { id: b.id })
+    } catch (e) {
+      return toast.error("Suppression refusée", { description: (e as Error).message })
+    }
+    setGarde(null) // le flux n'existe plus : rien à protéger
+    await va(lien.accueil())
     toast.success("Flux supprimé")
-    va(lien.accueil())
+    rafraichir()
   }
 
   // ---------- Glisser-déposer ----------
@@ -254,7 +293,8 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
   }
 
   const masques = new Set(reglages.masques)
-  const bibliotheque = <Bibliotheque skills={skills.filter((s) => !masques.has(s.name))} masques={masques.size} plus={plusSkill} glissable={large} cible={choisi?.type === "etape" ? choisi.titre || "Sans titre" : null} />
+  const visibles = skills.filter((s) => !masques.has(s.name))
+  const bibliotheque = <Bibliotheque skills={visibles} masques={skills.length - visibles.length} plus={plusSkill} glissable={large} cible={choisi?.type === "etape" ? choisi.titre || "Sans titre" : null} />
   const inspecteur = choisi ? (
     <Inspecteur
       e={choisi}
@@ -273,7 +313,7 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
           <h1 tabIndex={-1} className="font-display text-2xl font-bold tracking-tight outline-none sm:text-3xl">
             {b.id ? "Modifier le flux" : "Nouveau flux"}
           </h1>
-          {modifie && (
+          {aSauver && (
             <Badge variant="outline" className="border-warning/50 text-warning">
               Non enregistré
             </Badge>
@@ -283,7 +323,7 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
           <Button variant="ghost" asChild>
             <a href={lien.accueil()}>Fermer</a>
           </Button>
-          <Button onClick={enregistrer} disabled={enregistre || !modifie}>
+          <Button onClick={enregistrer} disabled={enregistre || !aSauver}>
             {enregistre ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
             Enregistrer
           </Button>
@@ -305,8 +345,14 @@ function Editeur({ flux, tousFlux, skills }: { flux?: Flux; tousFlux: Flux[]; sk
         </div>
       </header>
 
+      {disparu && (
+        <p role="alert" className="rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 text-sm">
+          Ce flux a été supprimé. Enregistre pour le recréer.
+        </p>
+      )}
+
       <DndContext accessibility={accessibilite} sensors={sensors} collisionDetection={collision} onDragStart={debut} onDragEnd={fin} onDragCancel={() => setActif(null)}>
-        <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
+        <div className="grid items-start gap-6 @5xl:grid-cols-[260px_minmax(0,1fr)_320px]">
           {large && <aside className="sticky top-20 max-h-[calc(100svh-6rem)]">{bibliotheque}</aside>}
 
           <section className="grid min-w-0 gap-4">
@@ -455,13 +501,13 @@ function Piste(props: {
         aria-label="Étapes du flux"
         className={cn("relative grid gap-3 rounded-xl pl-11 transition-colors", isOver && actif?.type === "skill" && "bg-primary/5 ring-2 ring-primary/40")}
       >
+        <span aria-hidden className={cn("pointer-events-none absolute top-6 bottom-6 left-[37px] border-l-2 border-dashed border-border transition-opacity", actif && "opacity-0")} />
         <svg aria-hidden className={cn("pointer-events-none absolute inset-y-0 left-0 h-full w-11 overflow-visible transition-opacity", actif && "opacity-0")} style={{ color: "var(--c2)" }}>
           <defs>
             <marker id="fleche" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M0 0L10 5L0 10z" fill="currentColor" />
             </marker>
           </defs>
-          <line x1="38" x2="38" y1="24" y2="calc(100% - 24px)" className="stroke-border" strokeWidth="2" strokeDasharray="3 5" />
           {arcs.map((a, i) => (
             <path key={i} d={a.d} fill="none" strokeWidth="2" strokeLinecap="round" markerEnd="url(#fleche)" className={a.ok ? "boucle vif" : "stroke-destructive"} />
           ))}
@@ -624,8 +670,12 @@ function Inspecteur({ e, items, maj, supprime, ouvreBibli, large }: { e: ElemB; 
   const i = items.indexOf(e)
   const trouver = async () => {
     if (e.type !== "etape") return
-    await api("/api/trouver", e).catch((err) => toast.error(err.message))
-    toast("Claude Code s'ouvre pour chercher un skill")
+    try {
+      await api("/api/trouver", e)
+      toast("Claude Code s'ouvre pour chercher un skill")
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
   }
   if (e.type === "retour") {
     const options = items.slice(0, i).filter((x): x is EtapeB => x.type === "etape")

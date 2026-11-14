@@ -14,10 +14,10 @@ function lis(): Theme {
   } catch {
     /* stockage indisponible */
   }
-  return "dark"
+  return "system"
 }
 
-// Thème clair, sombre ou celui du système. Sombre par défaut : c'est l'identité de Relais.
+// Thème clair, sombre ou celui du système (par défaut). index.html applique déjà le bon thème avant le premier affichage.
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>(lis)
 

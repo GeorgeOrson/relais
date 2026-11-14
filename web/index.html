@@ -1,11 +1,20 @@
 <!doctype html>
-<html lang="fr" class="dark">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/relais.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <title>Relais</title>
+    <script>
+      // Thème appliqué avant le premier affichage (mêmes règles que theme-provider.tsx), pour éviter un éclair de l'autre thème.
+      ;(function () {
+        var t
+        try { t = localStorage.getItem("relais-theme") } catch (e) {}
+        var sombre = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)
+        document.documentElement.classList.add(sombre ? "dark" : "light")
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
