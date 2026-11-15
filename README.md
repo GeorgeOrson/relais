@@ -1,5 +1,7 @@
 # Relais
 
+**Français** · [English](README.en.md)
+
 Relais enchaîne les skills de Claude Code étape par étape et suit l'avancement de tes projets.
 
 C'est une petite application locale. Tu choisis un flux, par exemple « Création de site web » ou « Amélioration d'un site existant ». Relais crée le dossier du projet, puis lance Claude Code à chaque étape avec la consigne et les skills qui vont avec. Quand une étape a écrit son livrable, tu la valides et tu passes à la suivante.
