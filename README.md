@@ -4,9 +4,43 @@ Relais enchaîne les skills de Claude Code étape par étape et suit l'avancemen
 
 C'est une petite application locale. Tu choisis un flux, par exemple « Création de site web » ou « Amélioration d'un site existant ». Relais crée le dossier du projet, puis lance Claude Code à chaque étape avec la consigne et les skills qui vont avec. Quand une étape a écrit son livrable, tu la valides et tu passes à la suivante.
 
-![Accueil de Relais](livrables/13-captures/accueil-clair-1536.jpg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/accueil-sombre.png">
+  <img alt="Accueil de Relais : les projets en cours et les flux disponibles" src="docs/accueil-clair.png">
+</picture>
 
-![Suivi d'un projet](livrables/13-captures/projet-sombre-1536.jpg)
+## En images
+
+Une étape de bout en bout : Claude Code écrit le livrable, l'étape passe à « À valider », tu la valides et tu lances la suivante.
+
+![Une étape validée, puis la suivante lancée](docs/etape.gif)
+
+Dans l'atelier, le « + » d'un skill crée une étape. Le réseau se redessine et tu règles l'étape à droite.
+
+![Création d'une étape dans l'atelier](docs/atelier.gif)
+
+Sur l'accueil, le réseau d'un projet s'anime quand tu le survoles. Le thème suit Windows, et tu peux passer en clair ou en sombre à tout moment.
+
+![Survol des projets et changement de thème](docs/accueil.gif)
+
+<details>
+<summary>Autres captures (suivi d'un projet, atelier, mobile)</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/projet-sombre.png">
+  <img alt="Suivi d'un projet" src="docs/projet-clair.png">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/atelier-sombre.png">
+  <img alt="L'atelier des flux" src="docs/atelier-clair.png">
+</picture>
+
+<p align="center"><img alt="Relais dans une fenêtre étroite, en clair et en sombre" src="docs/mobile.png" width="560"></p>
+
+</details>
+
+Les projets montrés ici sont des exemples créés pour la démonstration.
 
 ## Ce que fait Relais
 
