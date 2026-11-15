@@ -11,6 +11,10 @@ C'est une petite application locale. Tu choisis un flux, par exemple « Créatio
 
 ## En images
 
+La présentation en vidéo (53 secondes, sans son) :
+
+https://github.com/user-attachments/assets/193d83ed-3b17-43ea-a439-b44ba7193ae2
+
 Une étape de bout en bout : Claude Code écrit le livrable, l'étape passe à « À valider », tu la valides et tu lances la suivante.
 
 ![Une étape validée, puis la suivante lancée](docs/etape.gif)
