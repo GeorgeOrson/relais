@@ -39,10 +39,12 @@ Quelques résultats tirés de ces livrables :
 ## Installation et lancement
 
 ```bat
-git clone <adresse-du-depot> Relais
+git clone https://github.com/GeorgeOrson/relais.git Relais
 cd Relais
 Relais.bat
 ```
+
+Sans git, tu peux aussi télécharger le ZIP (bouton « Code » puis « Download ZIP » sur GitHub), le décompresser, puis double-cliquer sur `Relais.bat`.
 
 Au premier lancement, `Relais.bat` installe et compile l'interface (`npm ci` puis `npm run build` dans `web/`), ce qui prend environ une minute. Relais s'ouvre ensuite dans ton navigateur sur `http://localhost:4748/`.
 
@@ -54,7 +56,17 @@ Les nouveaux projets vont par défaut dans `Documents\Projets`, ce que tu peux c
 
 Relais ne fournit aucun skill. Il liste ceux que Claude Code connaît déjà sur ta machine, dans `~/.claude/skills` et dans les plugins installés. La page « Skills » permet de choisir lesquels apparaissent dans l'atelier.
 
-Les flux fournis citent des skills publics qui appartiennent à leurs auteurs, comme `grilling`, `ui-ux-pro-max` ou `ponytail`. Si l'un d'eux manque chez toi, l'étape ne peut pas être lancée et Relais propose « Trouver un skill » : Claude Code s'ouvre pour en chercher un qui convient. Tu peux aussi l'installer toi-même, ou modifier le flux dans l'atelier.
+Les flux fournis utilisent les skills suivants. `code-review`, `security-review`, `simplify` et `run` sont fournis avec Claude Code ; les autres sont des skills ou des plugins publics qui appartiennent à leurs auteurs, à installer de ton côté.
+
+| Flux | Skills |
+|---|---|
+| Création d'entreprise | `grilling`, `lean-startup`, `startup-canvas`, `startup-financial-modeling`, `pricing`, `brand` |
+| Création de site web | `grilling`, `brand`, `design-system`, `ui-ux-pro-max`, `ponytail`, `code-review` |
+| Création de logiciel | `grilling`, `lean-startup`, `ui-ux-pro-max`, `ponytail`, `code-review`, `security-review` |
+| Création de formation | `grilling`, `course-creation`, `pricing`, `slides`, `humanizer:humanizer` |
+| Amélioration d'un site existant | `grilling`, `ui-ux-pro-max`, `run`, `code-review`, `security-review`, `ponytail`, `design-system`, `humanizer:humanizer`, `simplify` |
+
+Si l'un d'eux manque chez toi, l'étape ne peut pas être lancée et Relais propose « Trouver un skill » : Claude Code s'ouvre pour en chercher un qui convient. Tu peux aussi l'installer toi-même, ou modifier le flux dans l'atelier.
 
 ## Sécurité
 

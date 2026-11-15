@@ -1,13 +1,13 @@
 # 11 — Relecture finale
 
-Flux « Amélioration d'un site existant », étape 11/13. Skill utilisé : `code-review` (niveau high), lancé sur le dépôt racine (`cf8c41e..HEAD`). L'interface est relue à la main (dépôt `web/`, `9ba58d5..HEAD`).
+Flux « Amélioration d'un site existant », étape 11/13. Skill utilisé : `code-review` (niveau high), lancé sur le dépôt racine (`9c5b526..HEAD`). L'interface est relue à la main (dépôt `web/`, `c1b3c79..HEAD`).
 
 ## Périmètre relu
 
 | Dépôt | Plage | Fichiers |
 |---|---|---|
-| racine | `cf8c41e..1569347` (étapes 6, 9, 10) | `server.js`, `test.js`, `Relais.bat` |
-| `web/` | `9ba58d5..604e0b7` (étapes 6 à 10) | `src/App.tsx`, `src/hooks/*`, `src/lib/*`, `src/pages/*`, `src/components/*` (dont `ui/*` : imports seulement), `index.html`, `package.json` |
+| racine | `9c5b526..fa95cbb` (étapes 6, 9, 10) | `server.js`, `test.js`, `Relais.bat` |
+| `web/` | `c1b3c79..8e4bfdb` (étapes 6 à 10) | `src/App.tsx`, `src/hooks/*`, `src/lib/*`, `src/pages/*`, `src/components/*` (dont `ui/*` : imports seulement), `index.html`, `package.json` |
 
 Vérifications lancées :
 - `node test.js` : tout passe (OK, statique, correctifs, http).

@@ -6,10 +6,10 @@ Flux « Amélioration d'un site existant », étape 6/13. Skill utilisé : `pony
 
 | Dépôt | Commit | Lot |
 |---|---|---|
-| racine | `f0da81f` | Lots 1 et 2 : sécurité et robustesse du serveur (`server.js`, `test.js`, `Relais.bat` pour C4) |
-| `web/` | `0b261d9` | Lot 3 : interface |
-| `web/` | `64b9923` | Lot 4 : dépendances |
-| racine | `2e72c34` | Lot 4 : `npm ci` dans `Relais.bat` |
+| racine | `69a13f8` | Lots 1 et 2 : sécurité et robustesse du serveur (`server.js`, `test.js`, `Relais.bat` pour C4) |
+| `web/` | `02dc57e` | Lot 3 : interface |
+| `web/` | `a5e1c19` | Lot 4 : dépendances |
+| racine | `4e1d39b` | Lot 4 : `npm ci` dans `Relais.bat` |
 
 **Écart au plan** : les lots 1 et 2 sont dans un seul commit. Ils touchent les mêmes fonctions de `server.js`, et les séparer aurait demandé un découpage à la main, morceau par morceau.
 

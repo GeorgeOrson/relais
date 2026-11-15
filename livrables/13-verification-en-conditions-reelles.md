@@ -4,7 +4,7 @@ Flux « Amélioration d'un site existant », étape 13/13. Skill utilisé : `run
 
 ## Méthode
 
-- **Build vérifié** : `web/dist` date du 14/11 à 18:21, comme le dernier commit de `web/` (`2d235ea`) ; aucun fichier de `web/src` n'est plus récent. La page charge `index-ChoSbwN3.js` / `index-Botfrx7Q.css`. On teste donc bien l'état final des étapes 8 à 12.
+- **Build vérifié** : `web/dist` date du 14/11 à 18:21, comme le dernier commit de `web/` (`2db2d29`) ; aucun fichier de `web/src` n'est plus récent. La page charge `index-ChoSbwN3.js` / `index-Botfrx7Q.css`. On teste donc bien l'état final des étapes 8 à 12.
 - **Serveur** : au début de l'étape, le Relais réel ne tournait plus (port 4748 en `TIME_WAIT`, aucun processus `node`). J'ai lancé le vrai `server.js` en `RELAIS_DRY`, avec `RELAIS_DATA` et `RELAIS_FLUX` pointant vers une **copie** du projet et des flux dans le dossier temporaire de la session. `projets.json`, `flux/` et `.relais/` n'ont pas été touchés.
 - **Petites largeurs** : la fenêtre Chrome est maximisée, donc `resize_window` n'a aucun effet. Comme aux étapes 8 et 12, j'ai utilisé une copie de `server.js` sur le port 4799, qui renvoie `SAMEORIGIN` au lieu de `DENY`, et des iframes de 1100, 768 et 390 px. Le vrai `server.js` n'a pas été modifié.
 - **Mesures** : script injecté dans la page. Contrastes WCAG calculés sur les couleurs rendues (opacités et fonds composés), débordement horizontal (`scrollWidth`/`clientWidth`), cibles de moins de 24 px, animations en cours (`getAnimations()`, `svg.animationsPaused()`).
@@ -99,7 +99,7 @@ Les 2 bloquants et 6 des 8 majeurs de l'audit sont réglés et vérifiés en con
 
 ## Mise à jour : N1 corrigé
 
-La piste du réseau était fausse. En masquant les blocs un par un, on trouve le vrai responsable : le titre de l'en-tête. Sur l'Atelier, il affiche le nom du flux, qui est long. Même replié avec `truncate`, il compte à pleine largeur dans le calcul de la largeur minimale de la zone principale (`SidebarInset`, `min-width: auto`). Correction : `min-w-0` sur `SidebarInset` dans `web/src/App.tsx` (commit `40293ee`).
+La piste du réseau était fausse. En masquant les blocs un par un, on trouve le vrai responsable : le titre de l'en-tête. Sur l'Atelier, il affiche le nom du flux, qui est long. Même replié avec `truncate`, il compte à pleine largeur dans le calcul de la largeur minimale de la zone principale (`SidebarInset`, `min-width: auto`). Correction : `min-w-0` sur `SidebarInset` dans `web/src/App.tsx` (commit `2a504cb`).
 
 Mesure après correction : **0 px de débordement** sur l'Accueil, le Projet, l'Atelier et Skills, à 1500, 1100, 900, 850, 768 et 390 px (`atelier-768-corrige.jpg`). `node test.js` OK, `tsc -b` sans erreur, eslint : les 2 erreurs déjà connues. `web/dist` a été recompilé.
 

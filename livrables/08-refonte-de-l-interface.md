@@ -2,12 +2,12 @@
 
 Flux « Amélioration d'un site existant », étape 8/13. Skills utilisés : `ui-ux-pro-max` (grille de priorités : accessibilité, interaction, performance, responsive, animation) et `ponytail` (le plus petit changement complet). Les références (M6, m3, c2…) renvoient à l'audit UX/UI (02). Le travail applique la partie « Étapes 7-8 » du plan (05) avec les tokens de l'étape 7.
 
-Commit local **`12440ed`** dans `web/`. `web/dist` **n'a pas été recompilé** (règle du cadrage : compilation à la main, serveur arrêté, après validation).
+Commit local **`9486177`** dans `web/`. `web/dist` **n'a pas été recompilé** (règle du cadrage : compilation à la main, serveur arrêté, après validation).
 
 ## Méthode de vérification
 
 - Banc d'essai dans le dossier temporaire de la session : une copie de `server.js` sur le port 4799, en `RELAIS_DRY`, avec une **copie** du projet Relais et des flux. Le vrai `.relais/`, `projets.json` et `flux/` n'ont pas été touchés.
-- Captures « avant » : compilation de l'état validé à l'étape 7 (commit `85fcdce`). Captures « après » : compilation de cette étape.
+- Captures « avant » : compilation de l'état validé à l'étape 7 (commit `dcdace0`). Captures « après » : compilation de cette étape.
 - Petites largeurs : iframes de 390, 768 et 1100 px. Pour ça, la copie du serveur sur le banc renvoyait `X-Frame-Options: SAMEORIGIN` au lieu de `DENY`. **Le vrai `server.js` n'a pas été modifié.**
 - Mesures faites par script dans la page : défilement horizontal, animations en cours, chevauchement des libellés, position du séparateur.
 

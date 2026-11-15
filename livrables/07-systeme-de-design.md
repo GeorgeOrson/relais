@@ -105,7 +105,7 @@ Ils sont calculés par script, de oklch vers sRGB, avec réduction de chroma hor
 - `web/src/pages/projet.tsx`, `atelier.tsx`, `skills.tsx` : `text-titre`. Dans `projet.tsx`, la pastille courante utilise `text-sur-flux shadow-lueur-flux`. Dans `atelier.tsx`, `text-[11px]` devient `text-xs`.
 - `web/src/components/app-sidebar.tsx` : le nom « Relais » est en Geist (`tracking-titre`). `web/src/App.tsx` : le raccourci « Ctrl K » passe de 10 px à 12 px.
 - `web/index.html` : liens Google Fonts retirés.
-- Commit local `85fcdce` dans `web/`.
+- Commit local `dcdace0` dans `web/`.
 
 ## Vérifications
 

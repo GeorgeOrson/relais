@@ -2,7 +2,7 @@
 
 Flux « Amélioration d'un site existant », étape 9/13. Skill utilisé : `humanizer:humanizer`. J'ai relu tous les textes visibles de `web/src` (titres, boutons, aides, infobulles, notifications, boîtes de confirmation, états vides, libellés pour lecteur d'écran) et les messages d'erreur de `server.js` affichés dans l'interface. Le sens ne change pas.
 
-Commits locaux : **`19b6417`** dans `web/` et **`ebc38fe`** à la racine. `web/dist` **n'a pas été recompilé** (règle du cadrage).
+Commits locaux : **`7eaddba`** dans `web/` et **`a51ea9c`** à la racine. `web/dist` **n'a pas été recompilé** (règle du cadrage).
 
 ## Règles appliquées
 

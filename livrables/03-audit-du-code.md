@@ -4,7 +4,7 @@ Flux « Amélioration d'un site existant », étape 3/13. Skill utilisé : `code
 
 ## Méthode
 
-- Le skill `code-review` relit un diff. Les deux dépôts sont propres (racine `cf8c41e`, `web/` `9ba58d5`), donc il n'a relu que les livrables 01 et 02, en les confrontant au code. Ses remarques utiles sont reprises ci-dessous (marquées « revue »).
+- Le skill `code-review` relit un diff. Les deux dépôts sont propres (racine `9c5b526`, `web/` `c1b3c79`), donc il n'a relu que les livrables 01 et 02, en les confrontant au code. Ses remarques utiles sont reprises ci-dessous (marquées « revue »).
 - Relecture complète faite à la main, ligne à ligne : `server.js`, `skills.js`, `test.js`, `Relais.bat`, et dans `web/src/` : `App.tsx`, `main.tsx`, `hooks/*`, `lib/*`, `pages/*`, `components/*` (pour `components/ui/*`, seulement `command.tsx`, `dialog.tsx` et le paquet `cn`).
 - Vérifications exécutées, sans rien écrire dans le projet : `node test.js` passe (« OK », « OK statique »). Un script lancé sur des dossiers temporaires confirme C3 (état corrompu : `etat.etapes is not iterable`), m3 (`slug('Nouveau') === 'nouveau'`) et m9 (un titre « 日本 » donne un slug vide).
 - Les numéros de ligne renvoient aux fichiers tels qu'ils sont au commit initial.

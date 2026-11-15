@@ -1,10 +1,10 @@
 # 10 — Simplification
 
-Flux « Amélioration d'un site existant », étape 10/13. Skill utilisé : `simplify`. Le périmètre couvre le code modifié pendant le flux : à la racine, `cf8c41e..HEAD` (`server.js`, `test.js`, `Relais.bat`), et dans `web/`, `9ba58d5..HEAD` (`src/`, `index.html`, `package.json`).
+Flux « Amélioration d'un site existant », étape 10/13. Skill utilisé : `simplify`. Le périmètre couvre le code modifié pendant le flux : à la racine, `9c5b526..HEAD` (`server.js`, `test.js`, `Relais.bat`), et dans `web/`, `c1b3c79..HEAD` (`src/`, `index.html`, `package.json`).
 
 Méthode : quatre relectures en parallèle (réutilisation, simplification, efficacité, altitude), puis dédoublonnage. J'ai appliqué les constats qui ne changent pas le comportement voulu et laissé de côté les autres, avec la raison.
 
-Commits locaux : **`1569347`** à la racine et **`604e0b7`** dans `web/`. `web/dist` **n'a pas été recompilé** (règle du cadrage).
+Commits locaux : **`fa95cbb`** à la racine et **`8e4bfdb`** dans `web/`. `web/dist` **n'a pas été recompilé** (règle du cadrage).
 
 ## Ce qui a été simplifié
 

@@ -1,0 +1,2 @@
+# Les scripts Windows doivent garder des fins de ligne CRLF (sinon cmd lit mal les étiquettes goto)
+*.bat text eol=crlf

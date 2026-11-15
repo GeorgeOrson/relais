@@ -56,8 +56,8 @@ Un seul utilisateur, l'auteur, en local sur son PC Windows. Rien n'est distribu�
 
 - Lecture du code : `server.js`, `skills.js`, `Relais.bat`, `flux/amelioration.json`, `web/package.json`, `web/src/` (App, pages, composants, styles).
 - Mise sous git, sans remote :
-  - `web/` : premier commit `9ba58d5` (« État initial de l'interface avant le flux d'amélioration »).
-  - Racine : dépôt créé, premier commit `cf8c41e` (« État initial du serveur avant le flux d'amélioration »).
+  - `web/` : premier commit `c1b3c79` (« État initial de l'interface avant le flux d'amélioration »).
+  - Racine : dépôt créé, premier commit `9c5b526` (« État initial du serveur avant le flux d'amélioration »).
   - Identité git locale des deux dépôts : `sampi`.
 
 ## Fichiers créés ou modifiés
